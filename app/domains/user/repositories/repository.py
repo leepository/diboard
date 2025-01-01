@@ -9,5 +9,17 @@ class UserRepository(ABC):
         pass
 
     @abstractmethod
-    def get_detail(self, user_id: int):
+    def get_detail(self, user_id: int = None, username: str = None):
+        pass
+
+    @abstractmethod
+    def create(self, user: User):
+        pass
+
+    @abstractmethod
+    def update(self, user: User):
+        pass
+
+    @abstractmethod
+    def delete(self, user: User):
         pass
