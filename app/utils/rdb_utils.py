@@ -1,4 +1,4 @@
-from operator import and_, or_
+from sqlalchemy import and_, or_
 from typing import List, Dict, Any
 
 class DynamicFilter:

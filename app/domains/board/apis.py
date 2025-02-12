@@ -5,6 +5,7 @@ from fastapi import (
     Path
 )
 from fastapi_pagination import Params as PaginationParams
+from starlette.requests import Request
 
 from dependency_injector.wiring import inject, Provide
 from app.container import Container
@@ -37,12 +38,15 @@ async def create_article_api(
 )
 @inject
 async def get_article_list_api(
+        request: Request,
         pagination_param: PaginationParams = Depends(),
         article_service: ArticleService = Depends(Provide[Container.article_service])
 ):
     """
     Article 목록 조회 API
     """
+    # print("user : ", request.state.user)
+
     return article_service.get_article_list(
         page=pagination_param.page,
         size=pagination_param.size

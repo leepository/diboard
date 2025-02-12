@@ -10,3 +10,6 @@ class AuthRequest(BaseModel):
 class AuthResponse(BaseModel):
     access_token: str = Field(title="Access token")
     refresh_token: str = Field(title="Refresh token")
+
+class ExecutionResp(BaseModel):
+    result: bool = Field(title="수행 결과")

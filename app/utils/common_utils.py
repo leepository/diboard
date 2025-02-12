@@ -1,3 +1,4 @@
+import os
 import time
 import uuid
 
@@ -16,3 +17,5 @@ def get_uuid():
     """
     return str(uuid.uuid4())
 
+def get_api_env():
+    return os.getenv("API_ENV", "DEV")

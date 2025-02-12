@@ -8,12 +8,19 @@ from app.domains.board.services import ArticleService
 
 from app.domains.user.repositories.rdb.rdb_repository import UserRdbRepository
 from app.domains.user.handlers import UserHandler
+from app.domains.user.services import UserService
 
 from app.domains.auth.repositories.cache.cache_repository import AuthCacheRepository
 from app.domains.auth.handlers import AuthHandler
+from app.domains.auth.services import AuthService
 
 class Container(containers.DeclarativeContainer):
-    wiring_config = containers.WiringConfiguration(modules=["app.domains.board.apis"])
+    wiring_config = containers.WiringConfiguration(modules=[
+        "app.middlewares.token_validator_middleware",
+        "app.domains.auth.apis",
+        "app.domains.board.apis",
+        "app.domains.user.apis"
+    ])
 
     # Rdb session
     redis_client = providers.Singleton(get_redis_client)
@@ -27,7 +34,9 @@ class Container(containers.DeclarativeContainer):
     # User
     user_repository = providers.Factory(UserRdbRepository, session=session)
     user_handler = providers.Factory(UserHandler, user_repository=user_repository)
+    user_service = providers.Factory(UserService, user_handler=user_handler)
 
     # Auth
     auth_repository = providers.Factory(AuthCacheRepository, redis_client=redis_client)
-    auth_handler = providers.Factory(AuthHandler, auth_repository=auth_repository)
+    auth_handler = providers.Singleton(AuthHandler, auth_repository=auth_repository)
+    auth_service = providers.Factory(AuthService, auth_handler=auth_handler, user_handler=user_handler)

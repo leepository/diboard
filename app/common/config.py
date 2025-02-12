@@ -76,5 +76,13 @@ def get_config(
     )
     config_obj = config.get(api_env)
 
+    # Set custom attribute
+    setattr(config_obj, 'KMS_SALT', 'TEST')
+    setattr(config_obj, 'JWT_ACCESS_TOKEN_EXPIRES_SECONDS', 60*60*24)
+    setattr(config_obj, 'JWT_ACCESS_SECRET_KEY', 'ACCESS_SECRET')
+    setattr(config_obj, 'JWT_ALGORITHM', 'HS512' )
+    setattr(config_obj, 'JWT_REFRESH_TOKEN_EXPIRES_SECONDS', 60*60*24*30)
+    setattr(config_obj, 'JWT_REFRESH_SECRET_KEY', 'REFRESH_SECRET')
+
     return config_obj
 
