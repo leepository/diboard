@@ -2,6 +2,9 @@ import base64
 import boto3
 import orjson
 
+from botocore.config import Config
+from fastapi import File
+
 from app.common.constants import AWS_REGION
 
 def get_aws_secret_value(secret_name: str):
@@ -31,3 +34,53 @@ def get_aws_secret_value(secret_name: str):
         secret_value = secret_string
 
     return secret_value
+
+def get_s3():
+    s3 = boto3.resource(
+        's3',
+        endpoint_url="",
+        config=Config(signature_version='s3v4'),
+        region_name=AWS_REGION
+    )
+    return s3, s3.meta.client
+
+def s3_upload_file(
+        upload_file_obj: File,
+        s3_bucket_name: str,
+        s3_key: str
+):
+    """
+    S3 file upload
+    :param upload_file_obj:
+    :param s3_bucket_name:
+    :param s3_key:
+    :return:
+    """
+    _, s3_client = get_s3()
+
+    file_upload_result = False
+    try:
+        s3_client.upload_fileobj(
+            Fileobj=upload_file_obj,
+            Bucket=s3_bucket_name,
+            Key=s3_key
+        )
+        file_upload_result = True
+    except Exception as ex:
+        print("[EX] aws_util.s3_upload_file : ", str(ex.args))
+
+    return file_upload_result
+
+async def s3_read_file(s3_bucket_name: str, s3_key: str):
+    """
+    Read and return s3 object body
+    :param s3_bucket_name:
+    :param s3_key:
+    :return:
+    """
+    s3, _ = get_s3()
+    try:
+        return s3.Object(bucket_name=s3_bucket_name, key=s3_key).get()['Body'].read()
+    except Exception as ex:
+        print("[EX] aws_utils.s3_read_file : ", str(ex.args))
+        raise ex

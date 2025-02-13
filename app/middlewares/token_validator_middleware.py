@@ -9,7 +9,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from typing import Callable
 
-from app.common.exceptions import exception_handler
+from app.common.exceptions import exception_handler, APIException
 from app.container import Container
 from app.domains.auth.handlers import AuthHandler
 from app.domains.user.handlers import UserHandler
@@ -58,8 +58,8 @@ class AccessControl(BaseHTTPMiddleware):
                 try:
                     response = await call_next(request)
                     await api_logger(request=request, response=response)
-                except Exception as e:
-                    error = await exception_handler(e)
+                except Exception as ex:
+                    error = await exception_handler(ex) if type(ex) is not APIException else ex
                     response = JSONResponse(status_code=error.status_code, content=error.detail)
                     await api_logger(request=request, error=error)
 
@@ -74,14 +74,12 @@ class AccessControl(BaseHTTPMiddleware):
                             raise Exception("Invalid token type - not Bearer token")
                         raw_token = tmp_token.replace("Bearer ", "")
                         user_id = self.auth_handler.decode_access_token(token=raw_token)
-                        print("user_id : ", user_id)
                         token_value = self.auth_handler.get_access_token_value(token=raw_token)
                         if token_value is None:
                             raise Exception("Invalid access token")
                         if user_id != token_value:
                             raise Exception("Invalid access token")
                         user = self.user_handler.get_detail(user_id = token_value)
-                        print("user : ", user)
                         request.state.user = user
 
                     else:
@@ -90,8 +88,8 @@ class AccessControl(BaseHTTPMiddleware):
                     response = await call_next(request)
                     await api_logger(request=request, response=response)
 
-                except Exception as e:
-                    error = await exception_handler(e)
+                except Exception as ex:
+                    error = await exception_handler(ex) if type(ex) is not APIException else ex
                     response = JSONResponse(status_code=error.status_code, content=error.detail)
                     await api_logger(request=request, error=error)
 

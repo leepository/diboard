@@ -1,20 +1,61 @@
-import datetime
-
+from datetime import datetime
 from sqlalchemy import (
-    DateTime,
+    Boolean,
     Column,
+    DateTime,
+    ForeignKey,
     Integer,
-    String
+    String,
+    Text
 )
+from sqlalchemy.orm import relationship
+
 from app.databases.rdb import Base
 
 class Article(Base):
     __tablename__ = "tb_article"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
-    content = Column(String)
-    created_at = Column(DateTime, default=datetime.datetime.now)
+    title = Column(String(255), nullable=False)
+    content = Column(Text, nullable=False)
+    is_deleted = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now)
+    deleted_at = Column(DateTime)
 
 class Comment(Base):
-    __tablename__ = "tb_comment"
+    __tablename__ = "tb_article_comment"
+
+    id = Column(Integer, primary_key=True, index=True)
+    article_id = Column(Integer, ForeignKey('Article.id'))
+    article = relationship("Article", back_populates='comments')
+    comment_id = Column(Integer)
+    content = Column(Text, nullable=False)
+    level = Column(Integer, nullable=False, default=0)
+    is_deleted = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now)
+    deleted_at = Column(DateTime)
+
+class Tag(Base):
+    __tablename__ = "tb_article_tag"
+
+    id = Column(Integer, parimey_key=True, index=True)
+    article_id = Column(Integer, ForeignKey('Article.id'))
+    article = relationship("Article", back_populates='tags')
+    tagging = Column(String(255), nullable=False)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now)
+    deleted_at = Column(DateTime)
+
+class AttachedFile(Base):
+    __tablename__ = "tb_attached_file"
+
+    id = Column(Integer, primary_key=True, index=True)
+    article_id = Column(Integer, ForeignKey('Article.id'))
+    article = relationship("Article", back_populates='files')
+    bucket_name = Column(String(255), nullable=False)
+    file_key = Column(String(255), nullable=False)
+    is_deleted = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.now)
+    deleted_at = Column(DateTime, default=datetime.now)
