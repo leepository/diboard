@@ -104,6 +104,9 @@ class TagRdbRepository(TagRepository):
             print("[EX] TagRdb Repository.get_list : ", str(ex.args))
         return result
 
+    def get_detail(self, tag_id: int):
+        return self.session.query(Tag).filter(Tag.id == tag_id).first()
+
     def create(self, tags: List[Tag]):
         exec_flag = False
         try:
@@ -143,6 +146,9 @@ class AttachedFileRdbRepository(AttachedFileRepository):
             AttachedFile.article_id == article_id,
             AttachedFile.is_deleted == False
         )).all()
+
+    def get_detail(self, attached_file_id: int):
+        return self.session.query(AttachedFile).filter(AttachedFile.id == attached_file_id).first()
 
     def create(self, attached_file: AttachedFile):
         self.session.add(attached_file)

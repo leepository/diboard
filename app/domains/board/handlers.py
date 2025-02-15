@@ -1,12 +1,19 @@
+from fastapi import UploadFile
 from typing import List
 
+from app.common.constants import (
+    S3_BUCKET,
+    S3_KEY_PREFIX
+)
 from app.domains.board.repositories.repository import (
     ArticleRepository,
+    AttachedFileRepository,
     CommentRepository,
     TagRepository
 )
 from app.domains.board.models import (
     Article,
+    AttachedFile,
     Comment,
     Tag
 )
@@ -14,6 +21,7 @@ from app.domains.board.schemas import (
     ArticleCreate,
     CommentCreate
 )
+from app.utils.aws_utils import s3_upload_file, s3_read_file
 
 class ArticleHandler:
 
@@ -70,6 +78,9 @@ class TagHandler:
     def get_list(self, article_id: int):
         return self.tag_repository.get_list(article_id=article_id)
 
+    def get_detail(self, tag_id: int):
+        return self.tag_repository.get_detail(tag_id=tag_id)
+
     def create(self, tags: List[Tag]):
         return self.tag_repository.create(tags)
 
@@ -78,3 +89,44 @@ class TagHandler:
 
     def delete_all(self, article_id: int):
         return self.tag_repository.delete_all(article_id=article_id)
+
+
+class AttachedFileHandler:
+
+    def __init__(self, attached_file_repository: AttachedFileRepository):
+        self.attached_file_repository = attached_file_repository
+
+    def get_list(self, article_id: int):
+        return self.attached_file_repository.get_list(article_id=article_id)
+
+    def get_detail(self, attached_file_id: int):
+        return self.attached_file_repository.get_detail(attached_file_id=attached_file_id)
+
+    def get_content(self, attached_file: AttachedFile):
+        attached_file_content = s3_read_file(
+            s3_bucket_name=S3_BUCKET,
+            s3_key=attached_file.s3_key
+        )
+        return attached_file_content
+
+    def create(self, attached_file: AttachedFile):
+        return self.attached_file_repository.create(attached_file=attached_file)
+
+    def delete(self, attached_file: AttachedFile):
+        return self.attached_file_repository.delete(attached_file=attached_file)
+
+    def delete_all(self, article_id: int):
+        return self.attached_file_repository.delete_all(article_id=article_id)
+
+    def upload(self, f: UploadFile):
+        s3_key = f"{S3_KEY_PREFIX}/{f.filename}"
+        upload_result = s3_upload_file(
+            upload_file_obj=f,
+            s3_bucket_name=S3_BUCKET,
+            s3_key=s3_key
+        )
+        return upload_result
+
+
+
+

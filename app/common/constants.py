@@ -9,6 +9,15 @@ AWS_SECRET_NAME = {
     "RDB": "diboard/db/mariadb"
 }
 
+S3_BUCKET = {
+    "BOARD": "uploaded-files"
+}
+
+S3_KEY_PREFIX = {
+    "BOARD": "/diboard"
+}
+
+
 class StatusCode:
     """ Response 상태 코드 """
     HTTP_400 = status.HTTP_400_BAD_REQUEST

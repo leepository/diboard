@@ -61,6 +61,10 @@ class TagRepository(ABC):
         pass
 
     @abstractmethod
+    def get_detail(self, tag_id: int):
+        pass
+
+    @abstractmethod
     def create(self, tags: List[Tag]):
         pass
 
@@ -79,12 +83,15 @@ class AttachedFileRepository(ABC):
     def get_list(self, article_id: int):
         pass
 
+    def get_detail(self, attached_file_id: int):
+        pass
+
     @abstractmethod
     def create(self, attached_file: AttachedFile):
         pass
 
     @abstractmethod
-    def delete(self, attached_file_id: int):
+    def delete(self, attached_file: AttachedFile):
         pass
 
     @abstractmethod

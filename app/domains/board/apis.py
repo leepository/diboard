@@ -1,9 +1,12 @@
+import urllib
+
 from fastapi import (
     APIRouter,
     Depends,
     File,
     HTTPException,
     Path,
+    Response,
     UploadFile
 )
 from fastapi_pagination import Params as PaginationParams
@@ -14,7 +17,9 @@ from dependency_injector.wiring import inject, Provide
 from app.container import Container
 from app.domains.board.services import (
     ArticleService,
-    CommentService
+    AttachedFileService,
+    CommentService,
+    TagService
 )
 from app.domains.board.models import (
     Article,
@@ -49,7 +54,11 @@ async def create_article_api(
         content=data.content
     )
     tag_data = article.tags
-    exec_result = article_service.create_article(article=article, tag_data=tag_data)
+    exec_result = article_service.create_article(
+        article=article,
+        tag_data=tag_data,
+        files=files
+    )
 
     return {'result': exec_result}
 
@@ -218,3 +227,45 @@ async def delete_comment_api(
     Comment 삭제
     """
     return comment_service.delete_comment(article_id=article_id, comment_id=comment_id)
+
+## For tag
+@board_router.delete(
+    name="단일 Tag 삭제",
+    path="/article/tag/{tag_id}",
+    response_model=ExecutionResult
+)
+@inject
+async def delete_tag_api(
+        tag_id: int = Path(description="Tag 일련 번호"),
+        tag_service: TagService = Depends(Provide[Container.tag_service])
+):
+    """
+    단일 Tag 삭제
+    """
+    return tag_service.delete(tag_id=tag_id)
+
+
+## For Attached file
+@board_router.get(
+    name="첨부파일 다운로드",
+    path="/article/{article}/attached-file/{attached_file_id}"
+)
+@inject
+async def get_attached_file_download_api(
+        attached_file_id: int = Path(description="첨부 파일 일련 번호"),
+        attached_file_service: AttachedFileService = Depends(Provide[Container.attached_file_service])
+):
+    """
+    첨부 파일 다운로드 API
+    """
+    contents, file_name = await attached_file_service.get_attached_file_download(
+        attached_file_id=attached_file_id
+    )
+
+    return Response(
+        content=contents,
+        headers={
+            'Content-Disposition': f'attachment;filename={urllib.parse.quote(file_name)}',
+            'Content-Type': 'application/octet-stream;charset=UTF-8',
+        }
+    )

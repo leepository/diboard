@@ -1,17 +1,23 @@
+from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from typing import List
 
+from app.common.constants import S3_BUCKET, S3_KEY_PREFIX
 from app.domains.board.exceptions import (
     NotExistArticle,
-    NotExistComment
+    NotExistAttachedFile,
+    NotExistComment,
+    NotExistTag
 )
 from app.domains.board.models import (
     Article,
+    AttachedFile,
     Comment,
     Tag
 )
 from app.domains.board.handlers import (
     ArticleHandler,
+    AttachedFileHandler,
     CommentHandler,
     TagHandler
 )
@@ -22,21 +28,42 @@ from app.domains.board.schemas import (
 
 class ArticleService:
 
-    def __init__(self, article_handler: ArticleHandler, tag_handler: TagHandler, session: Session):
+    def __init__(
+            self,
+            article_handler: ArticleHandler,
+            attached_file_handler: AttachedFileHandler,
+            tag_handler: TagHandler,
+            session: Session):
         self.article_handler = article_handler
+        self.attached_file_handler = attached_file_handler
         self.tag_handler = tag_handler
         self.session = session
 
-    def create_article(self, article: Article, tag_data: List[str]) -> bool:
+    def create_article(self, article: Article, tag_data: List[str], files: List[UploadFile]) -> bool:
         exec_result = False
         try:
             # create article
             article = self.article_handler.create(article=article)
+
             # create tags
             tags = []
             if len(tag_data) > 0:
                 tag_list = [Tag(article_id=article.id, tagging=d) for d in tag_data]
                 tags = self.tag_handler.create(tags=tag_list)
+
+            # Upload file
+            for f in files:
+                result_flag = self.attached_file_handler.upload(f=f)
+                if result_flag is True:
+                    attached_file = AttachedFile(
+                        article_id=article.id,
+                        s3_bucket_name=S3_BUCKET,
+                        s3_key=f"{S3_KEY_PREFIX}/{f.filename}",
+                        filename=f.filename,
+                        file_size=f.size,
+                        file_type=f.content_type
+                    )
+                    self.attached_file_handler.create(attached_file=attached_file)
             exec_result = True
         except Exception as ex:
             self.session.rollback()
@@ -145,3 +172,31 @@ class CommentService:
         if comment is None:
             raise NotExistComment()
         return self.comment_handler.delete(comment=comment)
+
+class TagService:
+
+    def __init__(self, tag_handler: TagHandler):
+        self.tag_handler = tag_handler
+
+    def delete(self, tag_id: int):
+        tag = self.tag_handler.get_detail(tag_id=tag_id)
+        if tag is None:
+            raise NotExistTag()
+        return self.tag_handler.delete(tag=tag)
+
+
+
+class AttachedFileService:
+
+    def __init__(self, attached_file_handler: AttachedFileHandler):
+        self.attached_file_handler = attached_file_handler
+
+    def get_attached_file_download(self, attached_file_id: int):
+        attached_file = self.attached_file_handler.get_detail(attached_file_id=attached_file_id)
+        if attached_file is None:
+            raise NotExistAttachedFile()
+
+        contents = self.attached_file_handler.get_content(attached_file=attached_file)
+        filename = attached_file.file_name
+
+        return contents, filename
