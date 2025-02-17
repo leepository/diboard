@@ -50,7 +50,8 @@ async def get_user_detail_api(
     """
     User 상세 조회
     """
-    return user_service.get_detail(user_id=user_id)
+    user = user_service.get_detail(user_id=user_id)
+    return user
 
 
 @user_router.post(

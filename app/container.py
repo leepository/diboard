@@ -4,15 +4,21 @@ from app.databases.rdb import SessionLocal
 
 from app.domains.board.repositories.rdb.rdb_repository import (
     ArticleRdbRepository,
-    CommentRdbRepository
+    AttachedFileRdbRepository,
+    CommentRdbRepository,
+    TagRdbRepository
 )
 from app.domains.board.handlers import (
     ArticleHandler,
-    CommentHandler
+    AttachedFileHandler,
+    CommentHandler,
+    TagHandler
 )
 from app.domains.board.services import (
     ArticleService,
-    CommentService
+    AttachedFileService,
+    CommentService,
+    TagService
 )
 
 from app.domains.user.repositories.rdb.rdb_repository import UserRdbRepository
@@ -35,15 +41,35 @@ class Container(containers.DeclarativeContainer):
     redis_client = providers.Singleton(get_redis_client)
     session = providers.Factory(SessionLocal)
 
+    # Attached file
+    attached_file_repository = providers.Singleton(AttachedFileRdbRepository, session=session)
+    attached_file_handler = providers.Singleton(AttachedFileHandler, attached_file_repository=attached_file_repository)
+    attached_file_service = providers.Singleton(AttachedFileService, attached_file_handler=attached_file_handler)
+
+    # Tag
+    tag_repository = providers.Singleton(TagRdbRepository, session=session)
+    tag_handler = providers.Singleton(TagHandler, tag_repository=tag_repository)
+    tag_service = providers.Singleton(TagService, tag_handler=tag_handler)
+
     # Article
-    article_repository = providers.Factory(ArticleRdbRepository, session=session)
-    article_handler = providers.Factory(ArticleHandler, article_repository=article_repository)
-    article_service = providers.Factory(ArticleService, article_handler=article_handler)
+    article_repository = providers.Singleton(ArticleRdbRepository, session=session)
+    article_handler = providers.Singleton(ArticleHandler, article_repository=article_repository)
+    article_service = providers.Singleton(
+        ArticleService,
+        article_handler=article_handler,
+        attached_file_handler=attached_file_handler,
+        tag_handler=tag_handler,
+        session=session
+    )
 
     # Comment
     comment_repository = providers.Singleton(CommentRdbRepository, session=session)
     comment_handler = providers.Singleton(CommentHandler, comment_repository=comment_repository)
-    comment_service = providers.Singleton(CommentService, comment_handler=comment_handler)
+    comment_service = providers.Singleton(
+        CommentService,
+        comment_handler=comment_handler,
+        article_handler=article_handler
+    )
 
     # User
     user_repository = providers.Factory(UserRdbRepository, session=session)

@@ -10,8 +10,6 @@ def get_redis_client():
     port = secret_value['PORT']
     password = secret_value['PASSWORD']
 
-    print(f"host : {host}, port: {port}, password: {password}")
-
     redis_connection_pool = redis.ConnectionPool(
         host=host,
         port=port,

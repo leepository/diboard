@@ -22,13 +22,17 @@ class Article(Base):
     created_at = Column(DateTime, default=datetime.now)
     updated_at = Column(DateTime, default=datetime.now)
     deleted_at = Column(DateTime)
+    # comments = relationship('Comment', back_populates='article', cascade='all, delete-orphan')
+    comments = relationship('Comment', cascade='all, delete-orphan')
+    tags = relationship('Tag', back_populates='article', cascade='all, delete-orphan')
+    files = relationship('AttachedFile', back_populates='article', cascade='all, delete-orphan')
 
 class Comment(Base):
     __tablename__ = "tb_article_comment"
 
     id = Column(Integer, primary_key=True, index=True)
-    article_id = Column(Integer, ForeignKey('Article.id'))
-    article = relationship("Article", back_populates='comments')
+    article_id = Column(Integer, ForeignKey('tb_article.id'))
+    # article = relationship("Article", back_populates='comments')
     comment_id = Column(Integer)
     content = Column(Text, nullable=False)
     level = Column(Integer, nullable=False, default=0)
@@ -40,8 +44,8 @@ class Comment(Base):
 class Tag(Base):
     __tablename__ = "tb_article_tag"
 
-    id = Column(Integer, parimey_key=True, index=True)
-    article_id = Column(Integer, ForeignKey('Article.id'))
+    id = Column(Integer, primary_key=True, index=True)
+    article_id = Column(Integer, ForeignKey('tb_article.id'))
     article = relationship("Article", back_populates='tags')
     tagging = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.now)
@@ -52,7 +56,7 @@ class AttachedFile(Base):
     __tablename__ = "tb_attached_file"
 
     id = Column(Integer, primary_key=True, index=True)
-    article_id = Column(Integer, ForeignKey('Article.id'))
+    article_id = Column(Integer, ForeignKey('tb_article.id'))
     article = relationship("Article", back_populates='files')
     s3_bucket_name = Column(String(255), nullable=False)
     s3_key = Column(String(255), nullable=False)

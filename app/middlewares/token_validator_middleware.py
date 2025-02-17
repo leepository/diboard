@@ -39,7 +39,6 @@ class AccessControl(BaseHTTPMiddleware):
             request: Request,
             call_next: Callable
     ):
-        print("start middleware --->")
         request.state.start_time = time.time()
 
         ip = request.headers['x-forwarded-for'] if "x-forwarded-for" in request.headers.keys() else request.client.host
