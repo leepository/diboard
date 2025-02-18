@@ -47,4 +47,48 @@ class TestUser(TestBase):
         assert result['status_code'] == 200
         assert result['data']['id'] == user_id
 
+    def test120_create_user(self, client):
+        """
+        User 생성 테스트
+        """
+        new_user = {
+            "username": "NEW_USER",
+            "password": "NEW_PASSWORD"
+        }
 
+        url = "/membership/user"
+        result = self.run_request(
+            test_client=client,
+            method="POST",
+            url=url,
+            data=new_user
+        )
+        assert result['status_code'] == 200
+        assert result['data']['id'] is not None
+
+        new_user_id = result['data']['id']
+
+        url = f"/membership/user/{new_user_id}"
+        result = self.run_request(
+            test_client=client,
+            method="GET",
+            url=url
+        )
+        assert result['status_code'] == 200
+        assert result['data']['id'] == new_user_id
+
+
+    def test130_delete_user(self, client):
+        # Get user list
+        users = self.get_user_list(client=client)
+        user_id = users[0]['id']
+
+        # Delete user
+        url = f"/membership/user/{user_id}"
+        result = self.run_request(
+            test_client=client,
+            method="DELETE",
+            url=url
+        )
+        assert result['status_code'] == 200
+        assert result['data']['result'] is True

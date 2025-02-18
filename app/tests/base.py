@@ -41,7 +41,7 @@ class TestBase:
             "PATCH": test_client.patch,
             "DELETE": test_client.delete
         }
-        if method.upper()  == "GET":
+        if method.upper() in ["GET", "DELETE"]:
             resp = test_client_method[method.upper()](
                 url=url,
                 headers=headers,
@@ -68,11 +68,16 @@ class TestBase:
                     'status_code': resp.status_code,
                     'resp_text': resp.text
                 })
-            print("result : ", result_dict)
         else:
-            result_dict.update({
-                'status_code': resp.status_code,
-                'data': resp.json()
-            })
+            try:
+                result_dict.update({
+                    'status_code': resp.status_code,
+                    'data': resp.json()
+                })
+            except:
+                result_dict.update({
+                    'status_code': resp.status_code,
+                    'data': resp.text
+                })
 
         return result_dict

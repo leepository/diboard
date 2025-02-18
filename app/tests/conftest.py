@@ -6,7 +6,7 @@ from app.main import create_app
 
 @pytest.fixture(scope="session")
 def app():
-    return create_app()
+    return create_app(api_env='TEST')
 
 @pytest.fixture(scope="session")
 def client(app):

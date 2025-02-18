@@ -1,3 +1,4 @@
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 from typing import List, Type
 
@@ -11,7 +12,7 @@ class UserRdbRepository(UserRepository):
 
     def get_list(self, page: int, size: int)-> List[Type[User]]:
         offset = (page - 1) * size
-        return self._session.query(User).offset(offset).limit(size).all()
+        return self._session.query(User).order_by(desc(User.id)).offset(offset).limit(size).all()
 
     def get_detail(self, user_id: int = None, username: str = None) -> User:
         """

@@ -89,5 +89,5 @@ async def delete_user_api(
             status_code=404,
             detail="User is not found"
         )
-    return user_service
 
+    return {'result': result}

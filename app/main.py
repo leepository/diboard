@@ -15,7 +15,7 @@ from app.domains.domain_routers import domain_router
 from app.domains.index.apis import index_router
 from app.middlewares.token_validator_middleware import AccessControl
 # from app.middlewares.token_validator_middleware import access_control
-from app.utils.common_utils import get_ttl_hash
+from app.utils.common_utils import get_ttl_hash, get_api_env
 
 # @asynccontextmanager
 # async def lifespan(app: FastAPI):
@@ -33,14 +33,17 @@ from app.utils.common_utils import get_ttl_hash
 
 
 
-def create_app():
+def create_app(api_env: str = None):
 
-    api_env = os.getenv("API_ENV", "DEV")
+    if api_env is not None:
+        os.environ['API_ENV'] = api_env
+    else:
+        api_env = get_api_env()
+
     ttl_hash = get_ttl_hash()
     conf = get_config(api_env=api_env, ttl_hash=ttl_hash)
 
     container = Container()
-    # container.wire(modules=[__name__])
 
     app = FastAPI(
         title="diBoard",
@@ -72,16 +75,11 @@ def create_app():
     )
 
     app.add_middleware(AccessControl)
-    # app.add_middleware(middleware_class=BaseHTTPMiddleware, dispatch=access_control)
-
-    # @app.on_event("startup")
-    # async def startup():
-    #     app.add_middleware(AccessControl, container=app.container)
-
 
     ## Router 등록
     app.include_router(index_router)
     app.include_router(domain_router)
 
-    print(">>>>> Run Application <<<<<")
+    if api_env != 'TEST':
+        print(">>>>> Run Application <<<<<")
     return app
