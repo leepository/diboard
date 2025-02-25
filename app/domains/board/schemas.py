@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from datetime import datetime
+from fastapi import Form
 from pydantic import BaseModel, Field
 from typing import List
 
@@ -6,10 +8,11 @@ class ExecutionResult(BaseModel):
     result: bool = Field(title="수행 결과")
 
 ## For Article
-class ArticleCreate(BaseModel):
-    title: str = Field(title="제목")
-    content: str = Field(title="내용")
-    tags: List[str] = Field(title="Tag", default=None)
+@dataclass
+class ArticleCreate():
+    title: str = Form(title="제목")
+    content: str = Form(title="내용")
+    tags: List[str] = Form(title="Tag", default=None)
 
 class ArticleData(BaseModel):
     id: int = Field(title="일련 번호")

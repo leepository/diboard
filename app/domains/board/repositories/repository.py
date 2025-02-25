@@ -53,6 +53,10 @@ class CommentRepository(ABC):
     def delete(self, comment: Comment):
         pass
 
+    @abstractmethod
+    def delete_all(self, article_id: int):
+        pass
+
 
 class TagRepository(ABC):
 

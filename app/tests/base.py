@@ -26,7 +26,7 @@ class TestBase:
 
         TestBase.ACCESS_TOKEN = result['access_token']
 
-    def run_request(self, test_client, method, url, headers=None, params=None, data=None, files=None):
+    def run_request(self, test_client, method, url, headers=None, params=None, data=None, files=None, formdata=False):
         access_token = self.ACCESS_TOKEN
 
         # Headers
@@ -52,7 +52,8 @@ class TestBase:
                 url=url,
                 headers=headers,
                 params=params,
-                json=data,
+                json=data if formdata is False else None,
+                data=data if formdata is True else None,
                 files=files
             )
 
@@ -81,3 +82,4 @@ class TestBase:
                 })
 
         return result_dict
+

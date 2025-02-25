@@ -53,7 +53,7 @@ class Tag(Base):
     deleted_at = Column(DateTime)
 
 class AttachedFile(Base):
-    __tablename__ = "tb_attached_file"
+    __tablename__ = "tb_article_attached_file"
 
     id = Column(Integer, primary_key=True, index=True)
     article_id = Column(Integer, ForeignKey('tb_article.id'))

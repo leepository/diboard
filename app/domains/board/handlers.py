@@ -69,6 +69,9 @@ class CommentHandler:
     def delete(self, comment: Comment):
         return self.comment_repository.delete(comment=comment)
 
+    def delete_all(self, article_id: int):
+        return self.comment_repository.delete_all(article_id=article_id)
+
 
 class TagHandler:
 

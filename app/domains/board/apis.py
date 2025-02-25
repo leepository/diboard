@@ -2,6 +2,7 @@ import urllib
 
 from fastapi import (
     APIRouter,
+    Body,
     Depends,
     File,
     HTTPException,
@@ -42,8 +43,8 @@ board_router = APIRouter()
 )
 @inject
 async def create_article_api(
-        data: ArticleCreate,
-        files: List[UploadFile] = File(default=..., description="첨부파일"),
+        data: ArticleCreate = Depends(),
+        files: List[UploadFile] = File(description="첨부파일", default=None),
         article_service: ArticleService = Depends(Provide[Container.article_service])
 ):
     """

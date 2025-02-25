@@ -32,10 +32,12 @@ class ArticleService:
             self,
             article_handler: ArticleHandler,
             attached_file_handler: AttachedFileHandler,
+            comment_handler: CommentHandler,
             tag_handler: TagHandler,
             session: Session):
         self.article_handler = article_handler
         self.attached_file_handler = attached_file_handler
+        self.comment_handler = comment_handler
         self.tag_handler = tag_handler
         self.session = session
 
@@ -117,11 +119,16 @@ class ArticleService:
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
                 raise NotExistArticle()
-            # Delete article
-            self.article_handler.delete(article=article)
+
+            # Delete comment for article
+            self.comment_handler.delete_all(article_id=article_id)
 
             # Delete all tags for article
             self.tag_handler.delete_all(article_id=article_id)
+
+            # Delete article
+            self.article_handler.delete(article=article)
+
 
             exec_flag = True
 

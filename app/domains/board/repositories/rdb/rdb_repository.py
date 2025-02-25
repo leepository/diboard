@@ -1,5 +1,7 @@
+import inspect
+
 from datetime import datetime
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, desc, update
 from sqlalchemy.orm import (
     aliased,
     Session
@@ -27,7 +29,7 @@ class ArticleRdbRepository(ArticleRepository):
 
     def get_list(self, page: int, size: int):
         offset = (page - 1) * size
-        return self.session.query(Article).offset(offset).limit(size).all()
+        return self.session.query(Article).order_by(desc(Article.id)).offset(offset).limit(size).all()
 
     def get_detail(self, article_id: int):
         return self.session.query(Article).filter(Article.id == article_id).first()
@@ -84,12 +86,39 @@ class CommentRdbRepository(CommentRepository):
         return comment
 
     def delete(self, comment: Comment):
-        comment.is_deleted = True
-        comment.deleted_at = datetime.now()
+        try:
+            comment.is_deleted = True
+            comment.deleted_at = datetime.now()
 
-        self.session.commit()
-        self.session.refresh(comment)
-        return comment
+            self.session.commit()
+            self.session.refresh(comment)
+            return True
+
+        except Exception as e:
+            class_name = self.__class__.__name__
+            method_name = inspect.currentframe().f_code.co_name
+            print(f'[EX] {class_name}.{method_name} : ', str(e.args))
+            return False
+
+    def delete_all(self, article_id: int):
+        try:
+            query = (
+                update(Comment)
+                .where(Comment.article_id == article_id)
+                .values(
+                    is_deleted=True,
+                    deleted_at=datetime.now()
+                )
+            )
+            self.session.execute(query)
+            self.session.commit()
+            return True
+
+        except Exception as e:
+            class_name = self.__class__.__name__
+            method_name = inspect.currentframe().f_code.co_name
+            print(f'[EX] {class_name}.{method_name} : ', str(e.args))
+            return False
 
 class TagRdbRepository(TagRepository):
 

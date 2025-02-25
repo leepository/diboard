@@ -41,43 +41,83 @@ class Container(containers.DeclarativeContainer):
     redis_client = providers.Singleton(get_redis_client)
     session = providers.Factory(SessionLocal)
 
-    # Attached file
-    attached_file_repository = providers.Singleton(AttachedFileRdbRepository, session=session)
-    attached_file_handler = providers.Singleton(AttachedFileHandler, attached_file_repository=attached_file_repository)
-    attached_file_service = providers.Singleton(AttachedFileService, attached_file_handler=attached_file_handler)
 
-    # Tag
-    tag_repository = providers.Singleton(TagRdbRepository, session=session)
-    tag_handler = providers.Singleton(TagHandler, tag_repository=tag_repository)
-    tag_service = providers.Singleton(TagService, tag_handler=tag_handler)
-
-    # Article
+    # Repositories
     article_repository = providers.Singleton(ArticleRdbRepository, session=session)
+    attached_file_repository = providers.Singleton(AttachedFileRdbRepository, session=session)
+    auth_repository = providers.Factory(AuthCacheRepository, redis_client=redis_client)
+    comment_repository = providers.Singleton(CommentRdbRepository, session=session)
+    tag_repository = providers.Singleton(TagRdbRepository, session=session)
+    user_repository = providers.Factory(UserRdbRepository, session=session)
+
+    # Handlers
     article_handler = providers.Singleton(ArticleHandler, article_repository=article_repository)
+    attached_file_handler = providers.Singleton(AttachedFileHandler, attached_file_repository=attached_file_repository)
+    auth_handler = providers.Singleton(AuthHandler, auth_repository=auth_repository)
+    comment_handler = providers.Singleton(CommentHandler, comment_repository=comment_repository)
+    tag_handler = providers.Singleton(TagHandler, tag_repository=tag_repository)
+    user_handler = providers.Factory(UserHandler, user_repository=user_repository)
+
+    # Services
     article_service = providers.Singleton(
         ArticleService,
         article_handler=article_handler,
         attached_file_handler=attached_file_handler,
+        comment_handler=comment_handler,
         tag_handler=tag_handler,
         session=session
     )
-
-    # Comment
-    comment_repository = providers.Singleton(CommentRdbRepository, session=session)
-    comment_handler = providers.Singleton(CommentHandler, comment_repository=comment_repository)
+    attached_file_service = providers.Singleton(AttachedFileService, attached_file_handler=attached_file_handler)
+    auth_service = providers.Factory(AuthService, auth_handler=auth_handler, user_handler=user_handler)
     comment_service = providers.Singleton(
         CommentService,
         comment_handler=comment_handler,
         article_handler=article_handler
     )
-
-    # User
-    user_repository = providers.Factory(UserRdbRepository, session=session)
-    user_handler = providers.Factory(UserHandler, user_repository=user_repository)
+    tag_service = providers.Singleton(TagService, tag_handler=tag_handler)
     user_service = providers.Factory(UserService, user_handler=user_handler)
 
-    # Auth
-    auth_repository = providers.Factory(AuthCacheRepository, redis_client=redis_client)
-    auth_handler = providers.Singleton(AuthHandler, auth_repository=auth_repository)
-    auth_service = providers.Factory(AuthService, auth_handler=auth_handler, user_handler=user_handler)
+
+
+
+    # # Attached file
+    # attached_file_repository = providers.Singleton(AttachedFileRdbRepository, session=session)
+    # attached_file_handler = providers.Singleton(AttachedFileHandler, attached_file_repository=attached_file_repository)
+    # attached_file_service = providers.Singleton(AttachedFileService, attached_file_handler=attached_file_handler)
+    #
+    # # Tag
+    # tag_repository = providers.Singleton(TagRdbRepository, session=session)
+    # tag_handler = providers.Singleton(TagHandler, tag_repository=tag_repository)
+    # tag_service = providers.Singleton(TagService, tag_handler=tag_handler)
+    #
+    # # Article
+    # article_repository = providers.Singleton(ArticleRdbRepository, session=session)
+    # article_handler = providers.Singleton(ArticleHandler, article_repository=article_repository)
+    # article_service = providers.Singleton(
+    #     ArticleService,
+    #     article_handler=article_handler,
+    #     attached_file_handler=attached_file_handler,
+    #     comment_handler=comment_handler,
+    #     tag_handler=tag_handler,
+    #     session=session
+    # )
+    #
+    # # Comment
+    # comment_repository = providers.Singleton(CommentRdbRepository, session=session)
+    # comment_handler = providers.Singleton(CommentHandler, comment_repository=comment_repository)
+    # comment_service = providers.Singleton(
+    #     CommentService,
+    #     comment_handler=comment_handler,
+    #     article_handler=article_handler
+    # )
+    #
+    # # User
+    # user_repository = providers.Factory(UserRdbRepository, session=session)
+    # user_handler = providers.Factory(UserHandler, user_repository=user_repository)
+    # user_service = providers.Factory(UserService, user_handler=user_handler)
+    #
+    # # Auth
+    # auth_repository = providers.Factory(AuthCacheRepository, redis_client=redis_client)
+    # auth_handler = providers.Singleton(AuthHandler, auth_repository=auth_repository)
+    # auth_service = providers.Factory(AuthService, auth_handler=auth_handler, user_handler=user_handler)
 
