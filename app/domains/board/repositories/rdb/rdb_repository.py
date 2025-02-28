@@ -136,7 +136,7 @@ class TagRdbRepository(TagRepository):
     def get_detail(self, tag_id: int):
         return self.session.query(Tag).filter(Tag.id == tag_id).first()
 
-    def create(self, tags: List[Tag]):
+    def create(self, tags: List[dict]):
         exec_flag = False
         try:
             self.session.bulk_insert_mappings(Tag, tags)

@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.common.constants import S3_BUCKET, S3_KEY_PREFIX
+from app.common.decorators import Transactional
+from app.container import Container
 from app.domains.board.exceptions import (
     NotExistArticle,
     NotExistAttachedFile,
@@ -23,8 +25,10 @@ from app.domains.board.handlers import (
 )
 from app.domains.board.schemas import (
     ArticleCreate,
+    ArticleUpdate,
     CommentCreate
 )
+from app.utils.debug_utils import dpp
 
 class ArticleService:
 
@@ -76,7 +80,7 @@ class ArticleService:
         return self.article_handler.get_list(page=page, size=size)
 
     def get_article_detail(self, article_id: int):
-        article = self.article_handler.get_detail(article_id==article_id)
+        article = self.article_handler.get_detail(article_id=article_id)
         if article is None:
             raise NotExistArticle()
 
@@ -85,26 +89,38 @@ class ArticleService:
 
         return article
 
-    def update_article(self, article_id: int, article_data: ArticleCreate, tag_data: List[str] ):
+    @Transactional(session=Container.session)
+    def update_article(self, article_id: int, article_data: ArticleUpdate, tag_data: List[str] = None ):
         exec_result = False
         try:
+
+            dpp("#1")
             # Check article
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
                 raise NotExistArticle()
             # Update article
             self.article_handler.update(article=article, article_data=article_data)
-
+            dpp("#2")
             # Update tags
-            if len(tag_data) > 0:
+            if tag_data is not None and len(tag_data) > 0:
+                dpp("tag_data : ", tag_data)
                 origin_tag_list = sorted([t.tagging for t in article.tags])
-                if origin_tag_list != sorted(tag_data):
-                    # 기존에 입력되어 있던 Tag와 수정 데이터로 받은 tag 리스트가 다른 경우
-                    # 기존 Tag 삭제
-                    self.tag_handler.delete_all(article_id=article.id)
-                    # 신규 Tag 입력
-                    tags = [Tag(article_id=article.id, tagging=d) for d in tag_data]
-                    self.tag_handler.create(tags=tags)
+                dpp("origin_tag_list : ", origin_tag_list)
+                if origin_tag_list is not None and len(origin_tag_list) > 0:
+                    dpp("origin_tag_list : ", origin_tag_list)
+                    if origin_tag_list != sorted(tag_data):
+                        dpp("#3")
+                        # 기존에 입력되어 있던 Tag와 수정 데이터로 받은 tag 리스트가 다른 경우
+                        # 기존 Tag 삭제
+                        self.tag_handler.delete_all(article_id=article.id)
+
+                # 신규 Tag 입력
+                # tags = [Tag(article_id=article.id, tagging=d) for d in tag_data]
+                tags = [{'article_id': article_id, 'tagging': d} for d in tag_data]
+                dpp("tags : ", tags)
+                self.tag_handler.create(tags=tags)
+                dpp("#4")
 
             exec_result = True
         except Exception as ex:

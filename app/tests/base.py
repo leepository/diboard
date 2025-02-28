@@ -69,6 +69,8 @@ class TestBase:
                     'status_code': resp.status_code,
                     'resp_text': resp.text
                 })
+
+            print("result : ", result_dict)
         else:
             try:
                 result_dict.update({

@@ -2,7 +2,6 @@ import urllib
 
 from fastapi import (
     APIRouter,
-    Body,
     Depends,
     File,
     HTTPException,
@@ -29,6 +28,7 @@ from app.domains.board.models import (
 from app.domains.board.schemas import (
     ArticleCreate,
     ArticleData,
+    ArticleUpdate,
     CommentCreate,
     CommentData,
     ExecutionResult
@@ -103,28 +103,28 @@ async def get_article_detail_api(
         )
     return article
 
-@board_router.put(
+@board_router.patch(
     name="Article 수정",
     path="/article/{article_id}",
     response_model=ExecutionResult
 )
 @inject
 async def update_article_api(
-        data: ArticleCreate,
+        data: ArticleUpdate,
         article_id: int = Path(description="Article 일련 번호"),
-        article_service: ArticleService = Depends(Provide[Container.article_handler])
+        article_service: ArticleService = Depends(Provide[Container.article_service])
 ):
     """
     Article 수정
     """
     tag_data = data.tags
-    article = article_service.update_article(article_id=article_id, article_data=data, tag_data=tag_data)
-    return article
+    result_service = article_service.update_article(article_id=article_id, article_data=data, tag_data=tag_data)
+    return {'result': result_service}
 
 @board_router.delete(
     name="Article 삭제",
     path="/article/{article_id}",
-    response_model=ArticleData
+    response_model=ExecutionResult
 )
 @inject
 async def delete_article_api(
@@ -134,7 +134,8 @@ async def delete_article_api(
     """
     Article 삭제
     """
-    return article_service.delete_article(article_id=article_id)
+    result_service = article_service.delete_article(article_id=article_id)
+    return {'result': result_service}
 
 
 

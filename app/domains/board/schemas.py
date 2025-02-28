@@ -14,10 +14,16 @@ class ArticleCreate():
     content: str = Form(title="내용")
     tags: List[str] = Form(title="Tag", default=None)
 
+class ArticleUpdate(BaseModel):
+    title: str = Field(title="제목", default=None)
+    content: str = Field(title="내용", default=None)
+    tags: List[str] = Field(title="Tags", default=None)
+
 class ArticleData(BaseModel):
     id: int = Field(title="일련 번호")
     title: str = Field(title="제목")
     content: str = Field(title="내용")
+    tags: List[str] = Field(title="Tags", default=None)
     created_at: datetime = Field(title="작성일시")
 
 ## For Comment

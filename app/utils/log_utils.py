@@ -27,7 +27,8 @@ async def api_logger(request: Request, response=None, error=None):
     error_log = None
     user =  request.state.user if hasattr(request.state, 'user') else None
     if error:
-        frame = inspect.currentframe()
+        # frame = inspect.currentframe()
+        frame = None
         if frame:
             error_file = frame.f_code.co_filename
             error_func = frame.f_code.co_name

@@ -40,7 +40,8 @@ class ArticleHandler:
     def update(self, article: Article, article_data: ArticleCreate):
         for key, value in article_data.model_dump().items():
             if key not in ["tags"]:
-                setattr(article, key, value)
+                if value is not None:
+                    setattr(article, key, value)
         return self.article_repository.update(article=article)
 
     def delete(self, article: Article):
@@ -84,7 +85,7 @@ class TagHandler:
     def get_detail(self, tag_id: int):
         return self.tag_repository.get_detail(tag_id=tag_id)
 
-    def create(self, tags: List[Tag]):
+    def create(self, tags: List[dict]):
         return self.tag_repository.create(tags)
 
     def delete(self, tag: Tag):
