@@ -18,10 +18,11 @@ from app.domains.board.models import (
     Tag
 )
 from app.domains.board.schemas import (
-    ArticleCreate,
+    ArticleUpsert,
     CommentCreate
 )
 from app.utils.aws_utils import s3_upload_file, s3_read_file
+from app.utils.debug_utils import dpp
 
 class ArticleHandler:
 
@@ -37,8 +38,8 @@ class ArticleHandler:
     def create(self, article: Article):
         return self.article_repository.create(article=article)
 
-    def update(self, article: Article, article_data: ArticleCreate):
-        for key, value in article_data.model_dump().items():
+    def update(self, article: Article, article_data: ArticleUpsert):
+        for key, value in article_data.__dict__.items():
             if key not in ["tags"]:
                 if value is not None:
                     setattr(article, key, value)
@@ -53,8 +54,8 @@ class CommentHandler:
     def __init__(self, comment_repository: CommentRepository):
         self.comment_repository = comment_repository
 
-    def get_list(self, article: Article, page: int, size: int):
-        return self.comment_repository.get_list(article_id=article.id, page=page, size=size)
+    def get_list(self, article_id: int, page: int, size: int):
+        return self.comment_repository.get_list(article_id=article_id, page=page, size=size)
 
     def get_detail(self, comment_id: int):
         return self.comment_repository.get_detail(comment_id=comment_id)
@@ -122,11 +123,11 @@ class AttachedFileHandler:
     def delete_all(self, article_id: int):
         return self.attached_file_repository.delete_all(article_id=article_id)
 
-    def upload(self, f: UploadFile):
-        s3_key = f"{S3_KEY_PREFIX}/{f.filename}"
-        upload_result = s3_upload_file(
+    async def upload(self, f: UploadFile):
+        s3_key = f"{S3_KEY_PREFIX['BOARD']}/{f.filename}"
+        upload_result = await s3_upload_file(
             upload_file_obj=f,
-            s3_bucket_name=S3_BUCKET,
+            s3_bucket_name=S3_BUCKET['BOARD'],
             s3_key=s3_key
         )
         return upload_result

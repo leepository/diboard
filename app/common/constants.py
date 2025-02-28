@@ -10,11 +10,11 @@ AWS_SECRET_NAME = {
 }
 
 S3_BUCKET = {
-    "BOARD": "uploaded-files"
+    "BOARD": "diboard-uploaded-files"
 }
 
 S3_KEY_PREFIX = {
-    "BOARD": "/diboard"
+    "BOARD": "diboard"
 }
 
 

@@ -1,7 +1,8 @@
 from dependency_injector import containers, providers
+
 from app.databases.cache import get_redis_client
 from app.databases.rdb import SessionLocal
-
+from app.databases.transactions import TransactionManager
 from app.domains.board.repositories.rdb.rdb_repository import (
     ArticleRdbRepository,
     AttachedFileRdbRepository,
@@ -20,7 +21,6 @@ from app.domains.board.services import (
     CommentService,
     TagService
 )
-
 from app.domains.user.repositories.rdb.rdb_repository import UserRdbRepository
 from app.domains.user.handlers import UserHandler
 from app.domains.user.services import UserService
@@ -38,17 +38,19 @@ class Container(containers.DeclarativeContainer):
     ])
 
     # Rdb session
-    _redis_client = providers.Singleton(get_redis_client)
-    _session = providers.Singleton(SessionLocal)
+    redis_client = providers.Singleton(get_redis_client)
+    session = providers.Singleton(SessionLocal)
 
+    # Transaction manager
+    transaction_manager = providers.Factory(TransactionManager, session=session)
 
     # Repositories
-    article_repository = providers.Singleton(ArticleRdbRepository, session=_session)
-    attached_file_repository = providers.Singleton(AttachedFileRdbRepository, session=_session)
-    auth_repository = providers.Factory(AuthCacheRepository, redis_client=_redis_client)
-    comment_repository = providers.Singleton(CommentRdbRepository, session=_session)
-    tag_repository = providers.Singleton(TagRdbRepository, session=_session)
-    user_repository = providers.Factory(UserRdbRepository, session=_session)
+    article_repository = providers.Singleton(ArticleRdbRepository, session=session)
+    attached_file_repository = providers.Singleton(AttachedFileRdbRepository, session=session)
+    auth_repository = providers.Factory(AuthCacheRepository, redis_client=redis_client)
+    comment_repository = providers.Singleton(CommentRdbRepository, session=session)
+    tag_repository = providers.Singleton(TagRdbRepository, session=session)
+    user_repository = providers.Factory(UserRdbRepository, session=session)
 
     # Handlers
     article_handler = providers.Singleton(ArticleHandler, article_repository=article_repository)
@@ -65,19 +67,25 @@ class Container(containers.DeclarativeContainer):
         attached_file_handler=attached_file_handler,
         comment_handler=comment_handler,
         tag_handler=tag_handler,
-        session=_session
+        transaction_manager=transaction_manager
     )
-    attached_file_service = providers.Singleton(AttachedFileService, attached_file_handler=attached_file_handler)
-    auth_service = providers.Factory(AuthService, auth_handler=auth_handler, user_handler=user_handler)
+    attached_file_service = providers.Singleton(
+        AttachedFileService,
+        attached_file_handler=attached_file_handler,
+        transaction_manager=transaction_manager
+    )
+    auth_service = providers.Factory(
+        AuthService,
+        auth_handler=auth_handler,
+        user_handler=user_handler,
+        transaction_manager=transaction_manager
+    )
     comment_service = providers.Singleton(
         CommentService,
         comment_handler=comment_handler,
-        article_handler=article_handler
+        article_handler=article_handler,
+        transaction_manager=transaction_manager
     )
-    tag_service = providers.Singleton(TagService, tag_handler=tag_handler)
-    user_service = providers.Factory(UserService, user_handler=user_handler)
-
-    @classmethod
-    def session(cls):
-        return cls._session
+    tag_service = providers.Singleton(TagService, tag_handler=tag_handler, transaction_manager=transaction_manager)
+    user_service = providers.Factory(UserService, user_handler=user_handler, transaction_manager=transaction_manager)
 

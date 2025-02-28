@@ -26,47 +26,21 @@ from app.domains.board.models import (
     Comment
 )
 from app.domains.board.schemas import (
-    ArticleCreate,
+    ArticleBase,
     ArticleData,
-    ArticleUpdate,
+    ArticleUpsert,
     CommentCreate,
     CommentData,
     ExecutionResult
 )
+from app.utils.debug_utils import dpp
 
 board_router = APIRouter()
-
-@board_router.post(
-    name="Article 등록",
-    path="/articles",
-    response_model=ExecutionResult
-)
-@inject
-async def create_article_api(
-        data: ArticleCreate = Depends(),
-        files: List[UploadFile] = File(description="첨부파일", default=None),
-        article_service: ArticleService = Depends(Provide[Container.article_service])
-):
-    """
-    Article 등록 API
-    """
-    article = Article(
-        title=data.title,
-        content=data.content
-    )
-    tag_data = article.tags
-    exec_result = article_service.create_article(
-        article=article,
-        tag_data=tag_data,
-        files=files
-    )
-
-    return {'result': exec_result}
 
 @board_router.get(
     name="Article 목록 조회",
     path="/articles",
-    response_model=list[ArticleData]
+    response_model=list[ArticleBase]
 )
 @inject
 async def get_article_list_api(
@@ -77,10 +51,11 @@ async def get_article_list_api(
     """
     Article 목록 조회 API
     """
-    return article_service.get_article_list(
+    result_service = article_service.get_article_list(
         page=pagination_param.page,
         size=pagination_param.size
     )
+    return result_service
 
 @board_router.get(
     name="Article 상세 조회",
@@ -103,6 +78,35 @@ async def get_article_detail_api(
         )
     return article
 
+@board_router.post(
+    name="Article 등록",
+    path="/articles",
+    response_model=ExecutionResult
+)
+@inject
+async def create_article_api(
+        data: ArticleUpsert = Depends(),
+        files: List[UploadFile] = File(description="첨부파일", default=None),
+        article_service: ArticleService = Depends(Provide[Container.article_service])
+):
+    """
+    Article 등록 API
+    """
+    article = Article(
+        title=data.title,
+        content=data.content
+    )
+    tag_data = article.tags
+    exec_result = await article_service.create_article(
+        article=article,
+        tag_data=tag_data,
+        files=files
+    )
+
+    return {'result': exec_result}
+
+
+
 @board_router.patch(
     name="Article 수정",
     path="/article/{article_id}",
@@ -110,7 +114,8 @@ async def get_article_detail_api(
 )
 @inject
 async def update_article_api(
-        data: ArticleUpdate,
+        data: ArticleUpsert = Depends(),
+        files: List[UploadFile] = File(description="첨부파일", default=None),
         article_id: int = Path(description="Article 일련 번호"),
         article_service: ArticleService = Depends(Provide[Container.article_service])
 ):
@@ -118,8 +123,9 @@ async def update_article_api(
     Article 수정
     """
     tag_data = data.tags
-    result_service = article_service.update_article(article_id=article_id, article_data=data, tag_data=tag_data)
+    result_service = await article_service.update_article(article_id=article_id, article_data=data, tag_data=tag_data, files=files)
     return {'result': result_service}
+
 
 @board_router.delete(
     name="Article 삭제",

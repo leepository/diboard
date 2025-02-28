@@ -4,6 +4,7 @@ from datetime import (
 )
 
 from app.common.config import get_config
+from app.databases.transactions import TransactionManager
 from app.domains.auth.errors import AuthErrors
 from app.domains.auth.schemas import AuthRequest
 from app.domains.auth.handlers import AuthHandler
@@ -15,12 +16,13 @@ from app.utils.common_utils import (
 )
 
 class AuthService:
-    def __init__(self, auth_handler: AuthHandler, user_handler: UserHandler):
+    def __init__(self, auth_handler: AuthHandler, user_handler: UserHandler, transaction_manager: TransactionManager):
         ttl_hash = get_ttl_hash()
         api_env = get_api_env()
         self.config = get_config(ttl_hash=ttl_hash, api_env=api_env)
         self.auth_handler = auth_handler
         self.user_handler = user_handler
+        self.transaction_manager = transaction_manager
 
     def signin(self, data: AuthRequest):
         # Get user data by username
@@ -60,7 +62,6 @@ class AuthService:
             "access_token": access_token,
             "refresh_token": refresh_token
         }
-
 
     def signout(self, access_token: str, refresh_token: str):
         access_token_value = self.auth_handler.get_token(key=access_token)

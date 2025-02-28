@@ -52,9 +52,8 @@ class TestBoard(TestBase):
         self.get_article_list(client=client)
 
     def test110_create_article(self, client):
-        ts = dt2ts(dt=datetime.now())
         article_data = {
-            'title': f'Test article title - {ts}',
+            'title': f'Test article title',
             'content': 'Test article contents',
             'tags': ['tag1', 'tag2']
         }
@@ -88,15 +87,16 @@ class TestBoard(TestBase):
         ))
         assert len(created_data) > 0
 
-        created_article = created_data[0]
+        created_article = self.get_article_detail(client=client, article_id=created_data[0]['id'])
+
         assert created_article['title'] == article_data['title']
         assert created_article['content'] == article_data['content']
         assert created_article['tags'].sort() == article_data['tags'].sort()
 
+
     def test111_create_article_without_tags(self, client):
-        ts = dt2ts(dt=datetime.now())
         article_data = {
-            'title': f'Test article title without tags - {ts}',
+            'title': f'Test article title without tags',
             'content': 'Test article content without tags',
             'tags': None
         }
@@ -130,16 +130,15 @@ class TestBoard(TestBase):
         ))
         assert len(created_data) > 0
 
-        created_article = created_data[0]
+        created_article = self.get_article_detail(client=client, article_id=created_data[0]['id'])
 
         assert created_article['title'] == article_data['title']
         assert created_article['content'] == article_data['content']
         assert len(created_article['tags']) < 1
 
     def test112_create_article_with_file(self, client):
-        ts = dt2ts(dt=datetime.now())
         article_data = {
-            'title': f'Test article title with file - {ts}',
+            'title': f'Test article title with file',
             'content': 'Test article content',
             'tags': ['TestTag1', 'TestTag2']
         }
@@ -183,11 +182,10 @@ class TestBoard(TestBase):
         ))
         assert len(created_articles) > 0
 
-        created_article = created_articles[0]
+        created_article = self.get_article_detail(client=client, article_id=created_articles[0]['id'])
         assert created_article['title'] == article_data['title']
         assert created_article['content'] == article_data['content']
         assert created_article['tags'].sort() == article_data['tags'].sort()
-
 
     def test200_get_article_list(self, client):
         articles = self.get_article_list(client=client)
@@ -218,7 +216,8 @@ class TestBoard(TestBase):
             test_client=client,
             method='PATCH',
             url=url,
-            data=update_data
+            data=update_data,
+            formdata=True
         )
         assert result['status_code'] == 200
 
@@ -226,8 +225,7 @@ class TestBoard(TestBase):
         article_detail = self.get_article_detail(client=client, article_id=article_id)
         assert article_detail['title'] == update_data['title']
         assert article_detail['content'] == update_data['content']
-        assert article_detail['tags'].sort() == update_data['tags'].sort()
-
+        assert [d['tagging'] for d in article_detail['tags']].sort() == update_data['tags'].sort()
 
     def test410_update_article_partially(self, client):
         articles = self.get_article_list(client=client)
@@ -244,7 +242,8 @@ class TestBoard(TestBase):
             test_client=client,
             method='PATCH',
             url=url,
-            data=update_data
+            data=update_data,
+            formdata=True
         )
         assert result['status_code'] == 200
 

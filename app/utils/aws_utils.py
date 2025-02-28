@@ -38,13 +38,13 @@ def get_aws_secret_value(secret_name: str):
 def get_s3():
     s3 = boto3.resource(
         's3',
-        endpoint_url="",
+        endpoint_url="https://s3.ap-northeast-2.amazonaws.com",
         config=Config(signature_version='s3v4'),
         region_name=AWS_REGION
     )
     return s3, s3.meta.client
 
-def s3_upload_file(
+async def s3_upload_file(
         upload_file_obj: File,
         s3_bucket_name: str,
         s3_key: str
@@ -60,10 +60,12 @@ def s3_upload_file(
 
     file_upload_result = False
     try:
-        s3_client.upload_fileobj(
-            Fileobj=upload_file_obj,
+        file_content = await upload_file_obj.read()
+        s3_client.put_object(
             Bucket=s3_bucket_name,
-            Key=s3_key
+            Key=s3_key,
+            Body=file_content,
+            ContentType=upload_file_obj.content_type
         )
         file_upload_result = True
     except Exception as ex:

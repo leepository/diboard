@@ -9,22 +9,26 @@ class ExecutionResult(BaseModel):
 
 ## For Article
 @dataclass
-class ArticleCreate():
-    title: str = Form(title="제목")
-    content: str = Form(title="내용")
+class ArticleUpsert():
+    title: str = Form(title="제목", default=None)
+    content: str = Form(title="내용", default=None)
     tags: List[str] = Form(title="Tag", default=None)
 
-class ArticleUpdate(BaseModel):
-    title: str = Field(title="제목", default=None)
-    content: str = Field(title="내용", default=None)
-    tags: List[str] = Field(title="Tags", default=None)
-
-class ArticleData(BaseModel):
+class ArticleBase(BaseModel):
     id: int = Field(title="일련 번호")
     title: str = Field(title="제목")
     content: str = Field(title="내용")
-    tags: List[str] = Field(title="Tags", default=None)
     created_at: datetime = Field(title="작성일시")
+    updated_at: datetime = Field(title="수정일시")
+
+class TagBase(BaseModel):
+    id: int = Field(title="일련 번호")
+    tagging: str = Field(title="Tag 내용")
+
+
+class ArticleData(ArticleBase):
+    tags: List[TagBase] = Field(title="Tags", default=None)
+
 
 ## For Comment
 class CommentCreate(BaseModel):

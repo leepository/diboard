@@ -29,6 +29,7 @@ class Article(Base):
 
 class Comment(Base):
     __tablename__ = "tb_article_comment"
+    __mapper_args__ = {'confirm_deleted_rows': False}
 
     id = Column(Integer, primary_key=True, index=True)
     article_id = Column(Integer, ForeignKey('tb_article.id'))
@@ -43,6 +44,7 @@ class Comment(Base):
 
 class Tag(Base):
     __tablename__ = "tb_article_tag"
+    __mapper_args__ = {'confirm_deleted_rows': False}
 
     id = Column(Integer, primary_key=True, index=True)
     article_id = Column(Integer, ForeignKey('tb_article.id'))
@@ -54,6 +56,7 @@ class Tag(Base):
 
 class AttachedFile(Base):
     __tablename__ = "tb_article_attached_file"
+    __mapper_args__ = {'confirm_deleted_rows': False}
 
     id = Column(Integer, primary_key=True, index=True)
     article_id = Column(Integer, ForeignKey('tb_article.id'))

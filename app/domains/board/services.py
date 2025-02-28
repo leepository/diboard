@@ -1,10 +1,8 @@
 from fastapi import UploadFile
-from sqlalchemy.orm import Session
 from typing import List
 
 from app.common.constants import S3_BUCKET, S3_KEY_PREFIX
-from app.common.decorators import Transactional
-from app.container import Container
+from app.databases.transactions import TransactionManager
 from app.domains.board.exceptions import (
     NotExistArticle,
     NotExistAttachedFile,
@@ -24,8 +22,7 @@ from app.domains.board.handlers import (
     TagHandler
 )
 from app.domains.board.schemas import (
-    ArticleCreate,
-    ArticleUpdate,
+    ArticleUpsert,
     CommentCreate
 )
 from app.utils.debug_utils import dpp
@@ -38,43 +35,12 @@ class ArticleService:
             attached_file_handler: AttachedFileHandler,
             comment_handler: CommentHandler,
             tag_handler: TagHandler,
-            session: Session):
+            transaction_manager: TransactionManager):
         self.article_handler = article_handler
         self.attached_file_handler = attached_file_handler
         self.comment_handler = comment_handler
         self.tag_handler = tag_handler
-        self.session = session
-
-    def create_article(self, article: Article, tag_data: List[str], files: List[UploadFile]) -> bool:
-        exec_result = False
-        try:
-            # create article
-            article = self.article_handler.create(article=article)
-
-            # create tags
-            tags = []
-            if len(tag_data) > 0:
-                tag_list = [Tag(article_id=article.id, tagging=d) for d in tag_data]
-                tags = self.tag_handler.create(tags=tag_list)
-
-            # Upload file
-            for f in files:
-                result_flag = self.attached_file_handler.upload(f=f)
-                if result_flag is True:
-                    attached_file = AttachedFile(
-                        article_id=article.id,
-                        s3_bucket_name=S3_BUCKET,
-                        s3_key=f"{S3_KEY_PREFIX}/{f.filename}",
-                        filename=f.filename,
-                        file_size=f.size,
-                        file_type=f.content_type
-                    )
-                    self.attached_file_handler.create(attached_file=attached_file)
-            exec_result = True
-        except Exception as ex:
-            self.session.rollback()
-
-        return exec_result
+        self.transaction_manager = transaction_manager
 
     def get_article_list(self, page: int, size: int):
         return self.article_handler.get_list(page=page, size=size)
@@ -89,28 +55,47 @@ class ArticleService:
 
         return article
 
-    @Transactional(session=Container.session)
-    def update_article(self, article_id: int, article_data: ArticleUpdate, tag_data: List[str] = None ):
-        exec_result = False
-        try:
+    async def create_article(self, article: Article, tag_data: List[str], files: List[UploadFile] = None) -> bool:
+        with self.transaction_manager.transaction():
+            # create article
+            article = self.article_handler.create(article=article)
 
-            dpp("#1")
+            # create tags
+            if len(tag_data) > 0:
+                # tag_list = [Tag(article_id=article.id, tagging=d) for d in tag_data]
+                tag_list = [{'article_id': article.id, 'tagging': d} for d in tag_data]
+                self.tag_handler.create(tags=tag_list)
+
+            # Upload file
+            if files is not None and len(files) > 0:
+                for f in files:
+                    result_flag = await self.attached_file_handler.upload(f=f)
+                    if result_flag is True:
+                        attached_file = AttachedFile(
+                            article_id=article.id,
+                            s3_bucket_name=S3_BUCKET['BOARD'],
+                            s3_key=f"{S3_KEY_PREFIX['BOARD']}/{f.filename}",
+                            filename=f.filename,
+                            file_size=f.size,
+                            file_type=f.content_type
+                        )
+                        self.attached_file_handler.create(attached_file=attached_file)
+            return True
+
+    async def update_article(self, article_id: int, article_data: ArticleUpsert, tag_data: List[str] = None, files: List[UploadFile] = None ):
+        with self.transaction_manager.transaction():
             # Check article
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
                 raise NotExistArticle()
             # Update article
             self.article_handler.update(article=article, article_data=article_data)
-            dpp("#2")
+
             # Update tags
             if tag_data is not None and len(tag_data) > 0:
-                dpp("tag_data : ", tag_data)
                 origin_tag_list = sorted([t.tagging for t in article.tags])
-                dpp("origin_tag_list : ", origin_tag_list)
                 if origin_tag_list is not None and len(origin_tag_list) > 0:
-                    dpp("origin_tag_list : ", origin_tag_list)
                     if origin_tag_list != sorted(tag_data):
-                        dpp("#3")
                         # 기존에 입력되어 있던 Tag와 수정 데이터로 받은 tag 리스트가 다른 경우
                         # 기존 Tag 삭제
                         self.tag_handler.delete_all(article_id=article.id)
@@ -118,19 +103,28 @@ class ArticleService:
                 # 신규 Tag 입력
                 # tags = [Tag(article_id=article.id, tagging=d) for d in tag_data]
                 tags = [{'article_id': article_id, 'tagging': d} for d in tag_data]
-                dpp("tags : ", tags)
                 self.tag_handler.create(tags=tags)
-                dpp("#4")
 
-            exec_result = True
-        except Exception as ex:
-            raise ex
-
-        return exec_result
+            # Upload files 처리
+            # Upload file은 기존 첨부 파일의 다음 순서로 업로드 순서대로 새로 첨부된다.
+            # 기존 첨부되었던 파일의 삭제는 attached_file API의 삭제 API를 호출하여 처리한다.
+            if files is not None and len(files) > 0:
+                for f in files:
+                    result_flag = await self.attached_file_handler.upload(f=f)
+                    if result_flag is True:
+                        attached_file = AttachedFile(
+                            article_id=article.id,
+                            s3_bucket_name=S3_BUCKET['BOARD'],
+                            s3_key=f"{S3_KEY_PREFIX['BOARD']}/{f.filename}",
+                            filename=f.filename,
+                            file_size=f.size,
+                            file_type=f.content_type
+                        )
+                        self.attached_file_handler.create(attached_file=attached_file)
+            return True
 
     def delete_article(self, article_id: int):
-        exec_flag = False
-        try:
+        with self.transaction_manager.transaction():
             # Check target article
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
@@ -142,77 +136,79 @@ class ArticleService:
             # Delete all tags for article
             self.tag_handler.delete_all(article_id=article_id)
 
+            # Delete all attached_file for article
+            self.attached_file_handler.delete_all(article_id=article_id)
+
             # Delete article
             self.article_handler.delete(article=article)
 
-
-            exec_flag = True
-
-        except Exception as ex:
-            print("[EX] article_service.delete_article : ", str(ex.args))
-            self.session.rollback()
-            raise ex
-
-        return exec_flag
+            return True
 
 
 class CommentService:
 
-    def __init__(self, comment_handler: CommentHandler, article_handler: ArticleHandler):
+    def __init__(self, comment_handler: CommentHandler, article_handler: ArticleHandler, transaction_manager: TransactionManager):
         self.comment_handler = comment_handler
         self.article_handler = article_handler
-
-    def create_comment(self, comment: Comment, article_id: int):
-        article = self.article_handler.get_detail(article_id=article_id)
-        if article is None:
-            raise NotExistArticle()
-        comment.article_id = article.id
-        return self.comment_handler.create(comment=comment)
+        self.transaction_manager = transaction_manager
 
     def get_comment_list(self, article_id: int, page: int, size: int):
         article = self.article_handler.get_detail(article_id=article_id)
         if article is None:
             raise NotExistArticle()
-        return self.comment_handler.get_list(article=article, page=page, size=size)
+        return self.comment_handler.get_list(article_id=article.id, page=page, size=size)
 
     def get_comment_detail(self, comment_id: int):
         return self.comment_handler.get_detail(comment_id=comment_id)
 
+    def create_comment(self, comment: Comment, article_id: int):
+        with self.transaction_manager.transaction():
+            article = self.article_handler.get_detail(article_id=article_id)
+            if article is None:
+                raise NotExistArticle()
+            comment.article_id = article.id
+            return self.comment_handler.create(comment=comment)
+
     def update_comment(self, article_id: int, comment_id: int, update_data: CommentCreate):
-        article = self.article_handler.get_detail(article_id=article_id)
-        if article is None:
-            raise NotExistArticle()
-        comment = self.comment_handler.get_detail(comment_id=comment_id)
-        if comment is None:
-            raise NotExistComment()
-        return self.comment_handler.update(comment=comment, update_data=update_data)
+        with self.transaction_manager.transaction():
+            article = self.article_handler.get_detail(article_id=article_id)
+            if article is None:
+                raise NotExistArticle()
+            comment = self.comment_handler.get_detail(comment_id=comment_id)
+            if comment is None:
+                raise NotExistComment()
+            return self.comment_handler.update(comment=comment, update_data=update_data)
 
     def delete_comment(self, article_id: int, comment_id: int):
-        article = self.article_handler.get_detail(article_id=article_id)
-        if article is None:
-            raise NotExistArticle()
-        comment = self.comment_handler.get_detail(comment_id=comment_id)
-        if comment is None:
-            raise NotExistComment()
-        return self.comment_handler.delete(comment=comment)
+        with self.transaction_manager.transaction():
+            article = self.article_handler.get_detail(article_id=article_id)
+            if article is None:
+                raise NotExistArticle()
+            comment = self.comment_handler.get_detail(comment_id=comment_id)
+            if comment is None:
+                raise NotExistComment()
+            return self.comment_handler.delete(comment=comment)
 
 class TagService:
 
-    def __init__(self, tag_handler: TagHandler):
+    def __init__(self, tag_handler: TagHandler, transaction_manager: TransactionManager):
         self.tag_handler = tag_handler
+        self.transaction_manager = transaction_manager
 
     def delete(self, tag_id: int):
-        tag = self.tag_handler.get_detail(tag_id=tag_id)
-        if tag is None:
-            raise NotExistTag()
-        return self.tag_handler.delete(tag=tag)
+        with self.transaction_manager.transaction():
+            tag = self.tag_handler.get_detail(tag_id=tag_id)
+            if tag is None:
+                raise NotExistTag()
+            return self.tag_handler.delete(tag=tag)
 
 
 
 class AttachedFileService:
 
-    def __init__(self, attached_file_handler: AttachedFileHandler):
+    def __init__(self, attached_file_handler: AttachedFileHandler, transaction_manager: TransactionManager):
         self.attached_file_handler = attached_file_handler
+        self.transaction_manager = transaction_manager
 
     def get_attached_file_download(self, attached_file_id: int):
         attached_file = self.attached_file_handler.get_detail(attached_file_id=attached_file_id)

@@ -69,7 +69,7 @@ class TagRepository(ABC):
         pass
 
     @abstractmethod
-    def create(self, tags: List[Tag]):
+    def create(self, tags: List[dict]):
         pass
 
     @abstractmethod

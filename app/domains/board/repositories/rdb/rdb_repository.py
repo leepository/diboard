@@ -20,7 +20,8 @@ from app.domains.board.repositories.repository import (
     CommentRepository,
     TagRepository
 )
-from app.domains.board.schemas import ArticleCreate
+from app.domains.board.schemas import ArticleUpsert
+from app.utils.debug_utils import dpp
 
 class ArticleRdbRepository(ArticleRepository):
 
@@ -36,18 +37,15 @@ class ArticleRdbRepository(ArticleRepository):
 
     def create(self, article: Article):
         self.session.add(article)
-        self.session.commit()
-        self.session.refresh(article)
+        self.session.flush()  # 새로 생성되는 ID값 생성을 위해 flush
         return article
 
     def update(self, article: Article):
-        self.session.commit()
-        self.session.refresh(article)
+        self.session.merge(article)
         return article
 
     def delete(self, article: Article):
         self.session.delete(article)
-        self.session.refresh(article)
         return article
 
 
@@ -76,29 +74,24 @@ class CommentRdbRepository(CommentRepository):
 
     def create(self, comment: Comment):
         self.session.add(comment)
-        self.session.commit()
-        self.session.refresh(comment)
+        self.session.flush()
         return comment
 
     def update(self, comment: Comment):
-        self.session.commit()
-        self.session.refresh(comment)
+        self.session.merge(comment)
         return comment
 
     def delete(self, comment: Comment):
         try:
             comment.is_deleted = True
             comment.deleted_at = datetime.now()
+            self.session.merge(comment)
 
-            self.session.commit()
-            self.session.refresh(comment)
-            return True
-
-        except Exception as e:
+        except Exception as ex:
             class_name = self.__class__.__name__
             method_name = inspect.currentframe().f_code.co_name
-            print(f'[EX] {class_name}.{method_name} : ', str(e.args))
-            return False
+            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
+            raise ex
 
     def delete_all(self, article_id: int):
         try:
@@ -111,14 +104,12 @@ class CommentRdbRepository(CommentRepository):
                 )
             )
             self.session.execute(query)
-            self.session.commit()
-            return True
 
-        except Exception as e:
+        except Exception as ex:
             class_name = self.__class__.__name__
             method_name = inspect.currentframe().f_code.co_name
-            print(f'[EX] {class_name}.{method_name} : ', str(e.args))
-            return False
+            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
+            raise ex
 
 class TagRdbRepository(TagRepository):
 
@@ -126,12 +117,7 @@ class TagRdbRepository(TagRepository):
         self.session = session
 
     def get_list(self, article_id: int):
-        result = None
-        try:
-            result = self.session.query(Tag).filter(Tag.article_id == article_id).all()
-        except Exception as ex:
-            print("[EX] TagRdb Repository.get_list : ", str(ex.args))
-        return result
+        return self.session.query(Tag).filter(Tag.article_id == article_id).all()
 
     def get_detail(self, tag_id: int):
         return self.session.query(Tag).filter(Tag.id == tag_id).first()
@@ -142,28 +128,31 @@ class TagRdbRepository(TagRepository):
             self.session.bulk_insert_mappings(Tag, tags)
             exec_flag = True
         except Exception as ex:
-            print("[EX] TagRdbRepository.create : ", str(ex.args))
+            class_name = self.__class__.__name__
+            method_name = inspect.currentframe().f_code.co_name
+            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
             raise ex
         return exec_flag
 
     def delete(self, tag: Tag):
-        exec_flag = False
         try:
             self.session.delete(tag)
-            self.session.commit()
         except Exception as ex:
-            print("[EX] TagRdbRepository.delete : ", str(ex.args))
-        return exec_flag
+            class_name = self.__class__.__name__
+            method_name = inspect.currentframe().f_code.co_name
+            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
+            raise ex
 
     def delete_all(self, article_id: int):
-        exec_flag = False
         try:
             self.session.query(Tag).filter(Tag.article_id == article_id).delete()
-            self.session.commit()
-            exec_flag = True
         except Exception as ex:
-            print("[EX] TagRdbRepository.delete_all : ", str(ex.args))
-        return exec_flag
+            print("<<<<<")
+            class_name = self.__class__.__name__
+            method_name = inspect.currentframe().f_code.co_name
+            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
+            raise ex
+
 
 class AttachedFileRdbRepository(AttachedFileRepository):
 
@@ -181,21 +170,24 @@ class AttachedFileRdbRepository(AttachedFileRepository):
 
     def create(self, attached_file: AttachedFile):
         self.session.add(attached_file)
-        self.session.commit()
-        self.session.refresh(attached_file)
+        self.session.flush()
         return attached_file
 
     def delete(self, attached_file: AttachedFile):
         try:
             self.session.delete(attached_file)
-            return True
         except Exception as ex:
+            class_name = self.__class__.__name__
+            method_name = inspect.currentframe().f_code.co_name
+            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
             raise ex
+
 
     def delete_all(self, article_id: int):
         try:
             self.session.query(AttachedFile).filter(AttachedFile.article_id == article_id).delete()
-            self.session.commit()
-            return True
         except Exception as ex:
+            class_name = self.__class__.__name__
+            method_name = inspect.currentframe().f_code.co_name
+            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
             raise ex
