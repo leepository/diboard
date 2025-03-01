@@ -58,16 +58,21 @@ class CommentRdbRepository(CommentRepository):
         first_comment = aliased(Comment, name='f_comment')
         second_comment = aliased(Comment, name='s_comment')
 
-        query = (
-            select(first_comment, second_comment)
-            .join(
-                second_comment,
-                first_comment.id == second_comment.id,
-                isouter=True
-            )
-            .where(first_comment.level == 0 and first_comment.article_id == article_id)
-        )
-        return self.session.execute(query).all()
+        # query = (
+        #     select(first_comment, second_comment)
+        #     .join(
+        #         second_comment,
+        #         first_comment.id == second_comment.id,
+        #         isouter=True
+        #     )
+        #     .where(first_comment.level == 0 and first_comment.article_id == article_id)
+        # )
+        # result = self.session.execute(query)
+        query = self.session.query(Comment) \
+            .filter(Comment.article_id == article_id) \
+            .filter(Comment.is_deleted == False) \
+            .order_by(desc(Comment.article_id), Comment.level)
+        return query.all()
 
     def get_detail(self, comment_id: int):
         return self.session.query(Comment).filter(Comment.id == comment_id).first()

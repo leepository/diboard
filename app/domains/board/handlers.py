@@ -1,5 +1,5 @@
 from fastapi import UploadFile
-from typing import List
+from typing import List, Optional
 
 from app.common.constants import (
     S3_BUCKET,
@@ -19,7 +19,8 @@ from app.domains.board.models import (
 )
 from app.domains.board.schemas import (
     ArticleUpsert,
-    CommentCreate
+    CommentCreate,
+    CommentData
 )
 from app.utils.aws_utils import s3_upload_file, s3_read_file
 from app.utils.debug_utils import dpp
@@ -54,22 +55,62 @@ class CommentHandler:
     def __init__(self, comment_repository: CommentRepository):
         self.comment_repository = comment_repository
 
+    def _convert2model(self, data: Optional[CommentCreate|CommentData]):
+        if type(data) == CommentCreate:
+            comment = Comment(
+                article_id=data.article_id,
+                comment_id=data.comment_id,
+                level=0,
+                content=data.content
+            )
+            if data.comment_id is not None and data.comment_id > 0:
+                comment.level = 1
+        else:
+            comment = Comment(
+                id=data.id,
+                article_id=data.article_id,
+                comment_id=data.comment_id,
+                level=data.level,
+                content=data.content,
+                created_at=data.created_at,
+                updated_at=data.updated_at
+            )
+        return comment
+
+    def _convert2schema(self, raw_data: Comment):
+        comment_data = CommentData(
+            id=raw_data.id,
+            article_id=raw_data.article_id,
+            comment_id=raw_data.comment_id,
+            level=raw_data.level,
+            content=raw_data.content,
+            created_at=raw_data.created_at,
+            updated_at=raw_data.updated_at
+        )
+        return comment_data
+
     def get_list(self, article_id: int, page: int, size: int):
-        return self.comment_repository.get_list(article_id=article_id, page=page, size=size)
+        raw_list = self.comment_repository.get_list(article_id=article_id, page=page, size=size)
+        comment_list = [self._convert2schema(raw_data=d) for d in raw_list]
+        return comment_list
 
     def get_detail(self, comment_id: int):
-        return self.comment_repository.get_detail(comment_id=comment_id)
+        raw_data = self.comment_repository.get_detail(comment_id=comment_id)
+        return self._convert2schema(raw_data=raw_data)
 
-    def create(self, comment: Comment):
+    def create(self, comment_create: CommentCreate):
+        comment = self._convert2model(data=comment_create)
         return self.comment_repository.create(comment=comment)
 
-    def update(self, comment: Comment, update_data: CommentCreate):
+    def update(self, comment: CommentData, update_data: CommentCreate):
         for key, value in update_data.model_dump().items():
             setattr(comment, key, value)
-        return self.comment_repository.update(comment=comment)
+        comment_model = self._convert2model(data=comment)
+        return self.comment_repository.update(comment=comment_model)
 
     def delete(self, comment: Comment):
-        return self.comment_repository.delete(comment=comment)
+        comment_model = self._convert2model(data=comment)
+        return self.comment_repository.delete(comment=comment_model)
 
     def delete_all(self, article_id: int):
         return self.comment_repository.delete_all(article_id=article_id)

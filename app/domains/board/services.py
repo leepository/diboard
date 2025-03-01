@@ -156,18 +156,20 @@ class CommentService:
         article = self.article_handler.get_detail(article_id=article_id)
         if article is None:
             raise NotExistArticle()
-        return self.comment_handler.get_list(article_id=article.id, page=page, size=size)
+        result_service = self.comment_handler.get_list(article_id=article.id, page=page, size=size)
+        return result_service
 
     def get_comment_detail(self, comment_id: int):
         return self.comment_handler.get_detail(comment_id=comment_id)
 
-    def create_comment(self, comment: Comment, article_id: int):
+    def create_comment(self, comment_create: CommentCreate, article_id: int):
         with self.transaction_manager.transaction():
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
                 raise NotExistArticle()
-            comment.article_id = article.id
-            return self.comment_handler.create(comment=comment)
+            comment_create.article_id = article.id
+            self.comment_handler.create(comment_create=comment_create)
+            return True
 
     def update_comment(self, article_id: int, comment_id: int, update_data: CommentCreate):
         with self.transaction_manager.transaction():
@@ -177,7 +179,8 @@ class CommentService:
             comment = self.comment_handler.get_detail(comment_id=comment_id)
             if comment is None:
                 raise NotExistComment()
-            return self.comment_handler.update(comment=comment, update_data=update_data)
+            self.comment_handler.update(comment=comment, update_data=update_data)
+            return True
 
     def delete_comment(self, article_id: int, comment_id: int):
         with self.transaction_manager.transaction():
@@ -187,7 +190,13 @@ class CommentService:
             comment = self.comment_handler.get_detail(comment_id=comment_id)
             if comment is None:
                 raise NotExistComment()
-            return self.comment_handler.delete(comment=comment)
+            self.comment_handler.delete(comment=comment)
+            return True
+
+    def delete_comment_all(self, article_id: int):
+        with self.transaction_manager.transaction():
+            self.comment_handler.delete_all(article_id=article_id)
+            return True
 
 class TagService:
 

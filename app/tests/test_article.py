@@ -6,7 +6,7 @@ from datetime import datetime
 from app.tests.base import TestBase
 from app.utils.datetime_utils import dt2ts
 
-class TestBoard(TestBase):
+class TestArticle(TestBase):
 
     def get_article_list(self, client):
         url = "/board/articles"

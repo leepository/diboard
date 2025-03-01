@@ -106,7 +106,6 @@ async def create_article_api(
     return {'result': exec_result}
 
 
-
 @board_router.patch(
     name="Article 수정",
     path="/article/{article_id}",
@@ -144,8 +143,9 @@ async def delete_article_api(
     return {'result': result_service}
 
 
-
-## For Comment
+####################################################################################################################
+# Article comment apis
+####################################################################################################################
 @board_router.get(
     name="Comment 목록 조회",
     path="/article/{article_id}/comments",
@@ -185,24 +185,24 @@ async def get_comment_detail_api(
 @board_router.post(
     name="Comment 등록",
     path="/article/{article_id}/comment",
-    response_model=CommentData
+    response_model=ExecutionResult
 )
 @inject
 async def create_comment_api(
-        post_data: CommentCreate,
+        insert_data: CommentCreate,
         article_id: int = Path(description="Article 일련 번호"),
         comment_service: CommentService = Depends(Provide[Container.comment_service])
 ):
     """
     Comment 등록
     """
-    comment = Comment(**post_data.data_dump())
-    return comment_service.create_comment(comment, article_id)
+    result_service = comment_service.create_comment(insert_data, article_id)
+    return {'result': result_service}
 
 @board_router.patch(
     name="Comment 수정",
     path="/article/{article_id}/comment/{comment_id}",
-    response_model=CommentData
+    response_model=ExecutionResult
 )
 @inject
 async def update_comment_api(
@@ -214,16 +214,17 @@ async def update_comment_api(
     """
     Comment 수정
     """
-    return comment_service.update_comment(
+    result_service = comment_service.update_comment(
         article_id=article_id,
         comment_id=comment_id,
         update_data=update_data
     )
+    return {'result': result_service}
 
 @board_router.delete(
     name="Comment 삭제",
     path="/article/{article_id}/comment/{comment_id}",
-    response_model=CommentData
+    response_model=ExecutionResult
 )
 @inject
 async def delete_comment_api(
@@ -234,9 +235,29 @@ async def delete_comment_api(
     """
     Comment 삭제
     """
-    return comment_service.delete_comment(article_id=article_id, comment_id=comment_id)
+    result_service = comment_service.delete_comment(article_id=article_id, comment_id=comment_id)
+    return {'result': result_service}
 
-## For tag
+@board_router.delete(
+    name="Comment 전체 삭제",
+    path="/article/{article_id}/comment",
+    response_model=ExecutionResult
+)
+@inject
+async def delete_comment_all_api(
+        article_id: int = Path(description="Article 일련 번호"),
+        comment_service: CommentService = Depends(Provide[Container.comment_service])
+):
+    """
+    Article 내 Comment 전체 삭제
+    """
+    result_service = comment_service.delete_comment_all(article_id=article_id)
+    return {'result': result_service}
+
+
+####################################################################################################################
+# Artcle tag apis
+####################################################################################################################
 @board_router.delete(
     name="단일 Tag 삭제",
     path="/article/tag/{tag_id}",
@@ -253,7 +274,9 @@ async def delete_tag_api(
     return tag_service.delete(tag_id=tag_id)
 
 
-## For Attached file
+####################################################################################################################
+# Attached file apis
+####################################################################################################################
 @board_router.get(
     name="첨부파일 다운로드",
     path="/article/{article}/attached-file/{attached_file_id}"
