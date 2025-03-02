@@ -200,17 +200,29 @@ class CommentService:
 
 class TagService:
 
-    def __init__(self, tag_handler: TagHandler, transaction_manager: TransactionManager):
+    def __init__(self, tag_handler: TagHandler, article_handler: ArticleHandler, transaction_manager: TransactionManager):
         self.tag_handler = tag_handler
+        self.article_handler = article_handler
         self.transaction_manager = transaction_manager
 
-    def delete(self, tag_id: int):
+    def delete(self, tag_id: int, article_id: int):
         with self.transaction_manager.transaction():
+            article = self.article_handler.get_detail(article_id=article_id)
+            if article is None:
+                raise NotExistArticle()
             tag = self.tag_handler.get_detail(tag_id=tag_id)
             if tag is None:
                 raise NotExistTag()
-            return self.tag_handler.delete(tag=tag)
+            self.tag_handler.delete(tag=tag)
+            return True
 
+    def delete_all(self, article_id: int):
+        with self.transaction_manager.transaction():
+            article = self.article_handler.get_detail(article_id=article_id)
+            if article is None:
+                raise NotExistArticle()
+            self.tag_handler.delete_all(article_id=article_id)
+            return True
 
 
 class AttachedFileService:

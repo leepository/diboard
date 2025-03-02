@@ -86,6 +86,11 @@ class Container(containers.DeclarativeContainer):
         article_handler=article_handler,
         transaction_manager=transaction_manager
     )
-    tag_service = providers.Singleton(TagService, tag_handler=tag_handler, transaction_manager=transaction_manager)
+    tag_service = providers.Singleton(
+        TagService,
+        tag_handler=tag_handler,
+        article_handler=article_handler,
+        transaction_manager=transaction_manager
+    )
     user_service = providers.Factory(UserService, user_handler=user_handler, transaction_manager=transaction_manager)
 

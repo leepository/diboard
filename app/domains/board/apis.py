@@ -96,7 +96,7 @@ async def create_article_api(
         title=data.title,
         content=data.content
     )
-    tag_data = article.tags
+    tag_data = data.tags
     exec_result = await article_service.create_article(
         article=article,
         tag_data=tag_data,
@@ -260,18 +260,37 @@ async def delete_comment_all_api(
 ####################################################################################################################
 @board_router.delete(
     name="단일 Tag 삭제",
-    path="/article/tag/{tag_id}",
+    path="/article/{article_id}/tag/{tag_id}",
     response_model=ExecutionResult
 )
 @inject
 async def delete_tag_api(
+        article_id: int = Path(description="Article 일련 번호"),
         tag_id: int = Path(description="Tag 일련 번호"),
         tag_service: TagService = Depends(Provide[Container.tag_service])
 ):
     """
     단일 Tag 삭제
     """
-    return tag_service.delete(tag_id=tag_id)
+    result_service = tag_service.delete(tag_id=tag_id, article_id=article_id)
+    return {'result': result_service}
+
+
+@board_router.delete(
+    name="전체 tag 삭제",
+    path="/article/{article_id}/tags",
+    response_model=ExecutionResult
+)
+@inject
+async def delete_tag_all_api(
+        article_id: int = Path(description="Article 일련 번호"),
+        tag_service: TagService = Depends(Provide[Container.tag_service])
+):
+    """
+    Article의 전체 tag 삭제
+    """
+    result_service = tag_service.delete_all(article_id=article_id)
+    return {'result': result_service}
 
 
 ####################################################################################################################
