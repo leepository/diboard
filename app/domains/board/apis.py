@@ -335,3 +335,20 @@ async def get_attached_file_download_api(
             'Content-Type': 'application/octet-stream;charset=UTF-8',
         }
     )
+
+@board_router.delete(
+    name="첨부 파일 삭제",
+    path='/article/{article_id}/attached-file/{attached_file_id}',
+    response_model=ExecutionResult
+)
+@inject
+async def delete_attached_file_api(
+        article_id: int = Path(description="Article 일련 번호"),
+        attached_file_id: int = Path(description="Attached file 일련 번호"),
+        attached_file_service: AttachedFileService = Depends(Provide[Container.attached_file_service])
+):
+    """
+    첨부 파일 삭제
+    """
+    result_service = attached_file_service.delete(article_id=article_id, attached_file_id=attached_file_id)
+    return {'result': result_service}

@@ -244,8 +244,14 @@ class TagService:
 
 class AttachedFileService:
 
-    def __init__(self, attached_file_handler: AttachedFileHandler, transaction_manager: TransactionManager):
+    def __init__(
+            self,
+            attached_file_handler: AttachedFileHandler,
+            article_handler: ArticleHandler,
+            transaction_manager: TransactionManager
+    ):
         self.attached_file_handler = attached_file_handler
+        self.article_handler = article_handler
         self.transaction_manager = transaction_manager
 
     def get_attached_file_download(self, attached_file_id: int):
@@ -257,3 +263,16 @@ class AttachedFileService:
         filename = attached_file.file_name
 
         return contents, filename
+
+    def delete(self, article_id: int, attached_file_id: int):
+        with self.transaction_manager.transaction():
+            article = self.article_handler.get_detail(article_id=article_id)
+            if article is None:
+                raise NotExistArticle()
+
+            attached_file = self.attached_file_handler.get_detail(attached_file_id=attached_file_id)
+            if attached_file is None:
+                raise NotExistAttachedFile()
+
+            self.attached_file_handler.delete(attached_file=attached_file)
+            return True

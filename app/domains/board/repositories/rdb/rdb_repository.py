@@ -126,23 +126,10 @@ class TagRdbRepository(TagRepository):
         self.session.bulk_insert_mappings(Tag, tags)
 
     def delete(self, tag: Tag):
-        try:
-            self.session.delete(tag)
-        except Exception as ex:
-            class_name = self.__class__.__name__
-            method_name = inspect.currentframe().f_code.co_name
-            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
-            raise ex
+        self.session.delete(tag)
 
     def delete_all(self, article_id: int):
-        try:
-            self.session.query(Tag).filter(Tag.article_id == article_id).delete()
-        except Exception as ex:
-            print("<<<<<")
-            class_name = self.__class__.__name__
-            method_name = inspect.currentframe().f_code.co_name
-            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
-            raise ex
+        self.session.query(Tag).filter(Tag.article_id == article_id).delete()
 
 
 class AttachedFileRdbRepository(AttachedFileRepository):

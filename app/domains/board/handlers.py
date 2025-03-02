@@ -91,10 +91,10 @@ class TagHandler:
             self.tag_repository.create(tags)
 
     def delete(self, tag: Tag):
-        return self.tag_repository.delete(tag)
+        self.tag_repository.delete(tag)
 
     def delete_all(self, article_id: int):
-        return self.tag_repository.delete_all(article_id=article_id)
+        self.tag_repository.delete_all(article_id=article_id)
 
 
 class AttachedFileHandler:
