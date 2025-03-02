@@ -200,7 +200,13 @@ async def create_comment_api(
     """
     Comment 등록
     """
-    result_service = comment_service.create_comment(insert_data, article_id)
+    insert_comment = Comment(
+        article_id=article_id,
+        comment_id=insert_data.comment_id,
+        content=insert_data.content,
+        level=0
+    )
+    result_service = comment_service.create_comment(insert_comment=insert_comment, article_id=article_id)
     return {'result': result_service}
 
 @board_router.patch(
@@ -218,10 +224,16 @@ async def update_comment_api(
     """
     Comment 수정
     """
+    update_comment = Comment(
+        article_id=article_id,
+        comment_id=update_data.comment_id,
+        content=update_data.content,
+        level=0
+    )
     result_service = comment_service.update_comment(
         article_id=article_id,
         comment_id=comment_id,
-        update_data=update_data
+        update_comment=update_comment
     )
     return {'result': result_service}
 

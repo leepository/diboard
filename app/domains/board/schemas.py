@@ -42,11 +42,12 @@ class ArticleData(ArticleBase):
 
 ## For Comment
 class CommentCreate(BaseModel):
-    article_id: int = Field(title="게시글 일련 번호")
     content: str = Field(title="댓글 내용")
     comment_id: int = Field(title="부모 댓글 일련 번호", default=None)
 
 class CommentData(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int = Field(title="댓글 일련 번호")
     article_id: int = Field(title="Article 일련번호")
     comment_id: Optional[int|None] = Field(title="부모 댓글 일련 번호")

@@ -89,6 +89,7 @@ class TestArticleComment(TestBase):
         ))
         assert len(inserted_comments) > 0
 
+
     def test110_create_article_subcomment(self, client):
         articles = self.get_article_list(client=client)
         if len(articles) < 1:

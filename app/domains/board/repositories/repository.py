@@ -46,7 +46,7 @@ class CommentRepository(ABC):
         pass
 
     @abstractmethod
-    def update(self, comment: Comment):
+    def update(self, comment_id: int, comment: Comment):
         pass
 
     @abstractmethod

@@ -166,16 +166,24 @@ class CommentService:
     def get_comment_detail(self, comment_id: int):
         return self.comment_handler.get_detail(comment_id=comment_id)
 
-    def create_comment(self, comment_create: CommentCreate, article_id: int):
+    def create_comment(self, insert_comment: Comment, article_id: int):
         with self.transaction_manager.transaction():
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
                 raise NotExistArticle()
-            comment_create.article_id = article.id
-            self.comment_handler.create(comment_create=comment_create)
+            insert_comment.article_id = article.id
+
+            if insert_comment.comment_id is not None and insert_comment.comment_id > 0:
+                comment = self.comment_handler.get_detail(comment_id=insert_comment.comment_id)
+                if comment is None:
+                    raise NotExistComment()
+                insert_comment.comment_id = comment.id
+                insert_comment.level = 1
+
+            _ = self.comment_handler.create(insert_comment=insert_comment)
             return True
 
-    def update_comment(self, article_id: int, comment_id: int, update_data: CommentCreate):
+    def update_comment(self, article_id: int, comment_id: int, update_comment: Comment):
         with self.transaction_manager.transaction():
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
@@ -183,7 +191,8 @@ class CommentService:
             comment = self.comment_handler.get_detail(comment_id=comment_id)
             if comment is None:
                 raise NotExistComment()
-            self.comment_handler.update(comment=comment, update_data=update_data)
+            update_comment.level = comment.level
+            self.comment_handler.update(comment_id=comment_id, update_comment=update_comment)
             return True
 
     def delete_comment(self, article_id: int, comment_id: int):
@@ -199,6 +208,10 @@ class CommentService:
 
     def delete_comment_all(self, article_id: int):
         with self.transaction_manager.transaction():
+            article = self.article_handler.get_detail(article_id=article_id)
+            if article is None:
+                raise NotExistArticle()
+
             self.comment_handler.delete_all(article_id=article_id)
             return True
 

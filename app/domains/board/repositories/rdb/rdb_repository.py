@@ -64,9 +64,6 @@ class CommentRdbRepository(CommentRepository):
         self.session = session
 
     def get_list(self, article_id: int, page: int, size: int):
-        first_comment = aliased(Comment, name='f_comment')
-        second_comment = aliased(Comment, name='s_comment')
-
         query = self.session.query(Comment) \
             .filter(Comment.article_id == article_id) \
             .filter(Comment.is_deleted == False) \
@@ -81,39 +78,38 @@ class CommentRdbRepository(CommentRepository):
         self.session.flush()
         return comment
 
-    def update(self, comment: Comment):
-        self.session.merge(comment)
-        return comment
+    def update(self, comment_id: int, comment: Comment):
+        query = (
+            update(Comment)
+            .where(Comment.id == comment_id)
+            .values(
+                content=comment.content,
+                updated_at=datetime.now()
+            )
+        )
+        self.session.execute(query)
 
     def delete(self, comment: Comment):
-        try:
-            comment.is_deleted = True
-            comment.deleted_at = datetime.now()
-            self.session.merge(comment)
-
-        except Exception as ex:
-            class_name = self.__class__.__name__
-            method_name = inspect.currentframe().f_code.co_name
-            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
-            raise ex
+        query = (
+            update(Comment)
+            .where(Comment.id == comment.id)
+            .values(
+                is_deleted=True,
+                deleted_at=datetime.now()
+            )
+        )
+        self.session.execute(query)
 
     def delete_all(self, article_id: int):
-        try:
-            query = (
-                update(Comment)
-                .where(Comment.article_id == article_id)
-                .values(
-                    is_deleted=True,
-                    deleted_at=datetime.now()
-                )
+        query = (
+            update(Comment)
+            .where(Comment.article_id == article_id)
+            .values(
+                is_deleted=True,
+                deleted_at=datetime.now()
             )
-            self.session.execute(query)
-
-        except Exception as ex:
-            class_name = self.__class__.__name__
-            method_name = inspect.currentframe().f_code.co_name
-            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
-            raise ex
+        )
+        self.session.execute(query)
 
 class TagRdbRepository(TagRepository):
 
