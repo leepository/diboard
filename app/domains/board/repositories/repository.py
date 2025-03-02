@@ -23,7 +23,7 @@ class ArticleRepository(ABC):
         pass
 
     @abstractmethod
-    def update(self, article: Article):
+    def update(self, article_id: int, update_article: Article):
         pass
 
     @abstractmethod

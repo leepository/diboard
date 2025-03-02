@@ -1,5 +1,6 @@
 import urllib
 
+from dataclasses import asdict
 from fastapi import (
     APIRouter,
     Depends,
@@ -98,11 +99,10 @@ async def create_article_api(
     )
     tag_data = data.tags
     exec_result = await article_service.create_article(
-        article=article,
+        insert_article=article,
         tag_data=tag_data,
         files=files
     )
-
     return {'result': exec_result}
 
 
@@ -121,8 +121,12 @@ async def update_article_api(
     """
     Article 수정
     """
+    article = Article(
+        title=data.title,
+        content=data.content
+    )
     tag_data = data.tags
-    result_service = await article_service.update_article(article_id=article_id, article_data=data, tag_data=tag_data, files=files)
+    result_service = await article_service.update_article(article_id=article_id, update_article=article, tag_data=tag_data, files=files)
     return {'result': result_service}
 
 

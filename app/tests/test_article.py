@@ -27,10 +27,7 @@ class TestArticle(TestBase):
             method='GET',
             url=url
         )
-        assert result['status_code'] == 200
-        assert result['data'] is not None
-
-        return result['data']
+        return result
 
     def delete_article(self, client, article_id):
         url = f'/board/article/{article_id}'
@@ -48,10 +45,7 @@ class TestArticle(TestBase):
     def test000_signin(self, client):
         self.signin(client=client)
 
-    def test100_get_board_list(self, client):
-        self.get_article_list(client=client)
-
-    def test110_create_article(self, client):
+    def test110_create_article_with_tags(self, client):
         article_data = {
             'title': f'Test article title',
             'content': 'Test article contents',
@@ -87,12 +81,15 @@ class TestArticle(TestBase):
         ))
         assert len(created_data) > 0
 
-        created_article = self.get_article_detail(client=client, article_id=created_data[0]['id'])
+        result_detail = self.get_article_detail(client=client, article_id=created_data[0]['id'])
+        assert result_detail['status_code'] == 200
+        assert result_detail['data'] is not None
+        created_article = result_detail['data']
 
         assert created_article['title'] == article_data['title']
         assert created_article['content'] == article_data['content']
-        assert created_article['tags'].sort() == article_data['tags'].sort()
-
+        created_tags = [d['tagging'] for d in created_article['tags']].sort()
+        assert created_tags == article_data['tags'].sort()
 
     def test111_create_article_without_tags(self, client):
         article_data = {
@@ -130,7 +127,10 @@ class TestArticle(TestBase):
         ))
         assert len(created_data) > 0
 
-        created_article = self.get_article_detail(client=client, article_id=created_data[0]['id'])
+        result_detail = self.get_article_detail(client=client, article_id=created_data[0]['id'])
+        assert result_detail['status_code'] == 200
+        assert result_detail['data'] is not None
+        created_article = result_detail['data']
 
         assert created_article['title'] == article_data['title']
         assert created_article['content'] == article_data['content']
@@ -182,10 +182,15 @@ class TestArticle(TestBase):
         ))
         assert len(created_articles) > 0
 
-        created_article = self.get_article_detail(client=client, article_id=created_articles[0]['id'])
+        result_detail = self.get_article_detail(client=client, article_id=created_articles[0]['id'])
+        assert result_detail['status_code'] == 200
+        assert result_detail['data'] is not None
+        created_article = result_detail['data']
+
         assert created_article['title'] == article_data['title']
         assert created_article['content'] == article_data['content']
-        assert created_article['tags'].sort() == article_data['tags'].sort()
+        created_tags = [d['tagging'] for d in created_article['tags']].sort()
+        assert created_tags == article_data['tags'].sort()
 
     def test200_get_article_list(self, client):
         articles = self.get_article_list(client=client)
@@ -197,7 +202,15 @@ class TestArticle(TestBase):
             pytest.skip("No created article test data ")
         article_id = articles[0]['id']
 
-        _ = self.get_article_detail(client=client, article_id=article_id)
+        result_detail = self.get_article_detail(client=client, article_id=article_id)
+        assert result_detail['status_code'] == 200
+        assert result_detail['data'] is not None
+
+    def test310_get_article_detail_error_with_wrong_article_id(self, client):
+        article_id = 1000000
+        result_detail = self.get_article_detail(client=client, article_id=article_id)
+        assert result_detail['status_code'] == 400
+        assert result_detail['detail'] == 'Not exist article'
 
     def test400_update_article(self, client):
         articles = self.get_article_list(client=client)
@@ -222,7 +235,11 @@ class TestArticle(TestBase):
         assert result['status_code'] == 200
 
         # Check updated data
-        article_detail = self.get_article_detail(client=client, article_id=article_id)
+        result_detail = self.get_article_detail(client=client, article_id=article_id)
+        assert result_detail['status_code'] == 200
+        assert result_detail['data'] is not None
+        article_detail = result_detail['data']
+
         assert article_detail['title'] == update_data['title']
         assert article_detail['content'] == update_data['content']
         assert [d['tagging'] for d in article_detail['tags']].sort() == update_data['tags'].sort()
@@ -248,7 +265,11 @@ class TestArticle(TestBase):
         assert result['status_code'] == 200
 
         # Check updated data
-        article_detail = self.get_article_detail(client=client, article_id=article_id)
+        result_detail = self.get_article_detail(client=client, article_id=article_id)
+        assert result_detail['status_code'] == 200
+        assert result_detail['data'] is not None
+        article_detail = result_detail['data']
+
         assert article_detail['title'] == update_data['title']
 
     def test500_delete_article(self, client):

@@ -46,24 +46,29 @@ class ArticleService:
         return self.article_handler.get_list(page=page, size=size)
 
     def get_article_detail(self, article_id: int):
+        # Get article data
         article = self.article_handler.get_detail(article_id=article_id)
         if article is None:
             raise NotExistArticle()
 
+        # Get tag list for article
         tags = self.tag_handler.get_list(article_id=article.id)
         article.tags = tags
 
+        # Get attached file list for article
+        attached_files = self.attached_file_handler.get_list(article_id=article.id)
+        article.attached_files = attached_files
+
         return article
 
-    async def create_article(self, article: Article, tag_data: List[str], files: List[UploadFile] = None) -> bool:
+    async def create_article(self, insert_article: Article, tag_data: List[str], files: List[UploadFile] = None) -> bool:
         with self.transaction_manager.transaction():
             # create article
-            article = self.article_handler.create(article=article)
+            article = self.article_handler.create(insert_article=insert_article)
 
             # create tags
             if len(tag_data) > 0:
-                # tag_list = [Tag(article_id=article.id, tagging=d) for d in tag_data]
-                tag_list = [{'article_id': article.id, 'tagging': d} for d in tag_data]
+                tag_list = [{'article_id': article.id, 'tagging': d} for d in tag_data if d != '']
                 self.tag_handler.create(tags=tag_list)
 
             # Upload file
@@ -79,17 +84,17 @@ class ArticleService:
                             file_size=f.size,
                             file_type=f.content_type
                         )
-                        self.attached_file_handler.create(attached_file=attached_file)
+                        _ = self.attached_file_handler.create(attached_file=attached_file)
             return True
 
-    async def update_article(self, article_id: int, article_data: ArticleUpsert, tag_data: List[str] = None, files: List[UploadFile] = None ):
+    async def update_article(self, article_id: int, update_article: Article, tag_data: List[str] = None, files: List[UploadFile] = None ):
         with self.transaction_manager.transaction():
             # Check article
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
                 raise NotExistArticle()
             # Update article
-            self.article_handler.update(article=article, article_data=article_data)
+            self.article_handler.update(article_id=article.id, update_article=update_article)
 
             # Update tags
             if tag_data is not None and len(tag_data) > 0:
@@ -101,9 +106,8 @@ class ArticleService:
                         self.tag_handler.delete_all(article_id=article.id)
 
                 # 신규 Tag 입력
-                # tags = [Tag(article_id=article.id, tagging=d) for d in tag_data]
-                tags = [{'article_id': article_id, 'tagging': d} for d in tag_data]
-                self.tag_handler.create(tags=tags)
+                tag_list = [{'article_id': article.id, 'tagging': d} for d in tag_data if d != '']
+                self.tag_handler.create(tags=tag_list)
 
             # Upload files 처리
             # Upload file은 기존 첨부 파일의 다음 순서로 업로드 순서대로 새로 첨부된다.

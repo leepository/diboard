@@ -37,16 +37,25 @@ class ArticleRdbRepository(ArticleRepository):
 
     def create(self, article: Article):
         self.session.add(article)
-        self.session.flush()  # 새로 생성되는 ID값 생성을 위해 flush
+        self.session.flush() # 새로 생성되는 ID값 생성을 위해 flush
         return article
 
-    def update(self, article: Article):
-        self.session.merge(article)
-        return article
+    def update(self, article_id: int, update_article: Article):
+        update_dict = {}
+        if update_article.title is not None and update_article.title != '':
+            update_dict.update({'title': update_article.title})
+        if update_article.content is not None and update_article.content != '':
+            update_dict.update({'content': update_article.content})
+
+        query = (
+            update(Article)
+            .where(Article.id == article_id)
+            .values(**update_dict)
+        )
+        self.session.execute(query)
 
     def delete(self, article: Article):
         self.session.delete(article)
-        return article
 
 
 class CommentRdbRepository(CommentRepository):
@@ -58,16 +67,6 @@ class CommentRdbRepository(CommentRepository):
         first_comment = aliased(Comment, name='f_comment')
         second_comment = aliased(Comment, name='s_comment')
 
-        # query = (
-        #     select(first_comment, second_comment)
-        #     .join(
-        #         second_comment,
-        #         first_comment.id == second_comment.id,
-        #         isouter=True
-        #     )
-        #     .where(first_comment.level == 0 and first_comment.article_id == article_id)
-        # )
-        # result = self.session.execute(query)
         query = self.session.query(Comment) \
             .filter(Comment.article_id == article_id) \
             .filter(Comment.is_deleted == False) \
@@ -128,16 +127,7 @@ class TagRdbRepository(TagRepository):
         return self.session.query(Tag).filter(Tag.id == tag_id).first()
 
     def create(self, tags: List[dict]):
-        exec_flag = False
-        try:
-            self.session.bulk_insert_mappings(Tag, tags)
-            exec_flag = True
-        except Exception as ex:
-            class_name = self.__class__.__name__
-            method_name = inspect.currentframe().f_code.co_name
-            print(f'[EX] {class_name}.{method_name} : ', str(ex.args))
-            raise ex
-        return exec_flag
+        self.session.bulk_insert_mappings(Tag, tags)
 
     def delete(self, tag: Tag):
         try:

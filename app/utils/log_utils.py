@@ -62,7 +62,7 @@ async def api_logger(request: Request, response=None, error=None):
     )
 
     if error:
-        traceback.print_exc()
+        # traceback.print_exc()
         logger.error(ujson.dumps(log_dict))
     else:
         if api_env != 'TEST':

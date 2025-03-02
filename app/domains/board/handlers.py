@@ -18,6 +18,7 @@ from app.domains.board.models import (
     Tag
 )
 from app.domains.board.schemas import (
+    ArticleData,
     ArticleUpsert,
     CommentCreate,
     CommentData
@@ -31,23 +32,21 @@ class ArticleHandler:
         self.article_repository = article_repository
 
     def get_list(self, page: int = 1, size: int = 3):
-        return self.article_repository.get_list(page=page, size=size)
+        article_list = self.article_repository.get_list(page=page, size=size)
+        return article_list
 
     def get_detail(self, article_id: int):
-        return self.article_repository.get_detail(article_id=article_id)
+        article = self.article_repository.get_detail(article_id=article_id)
+        return article
 
-    def create(self, article: Article):
-        return self.article_repository.create(article=article)
+    def create(self, insert_article: Article):
+        return self.article_repository.create(article=insert_article)
 
-    def update(self, article: Article, article_data: ArticleUpsert):
-        for key, value in article_data.__dict__.items():
-            if key not in ["tags"]:
-                if value is not None:
-                    setattr(article, key, value)
-        return self.article_repository.update(article=article)
+    def update(self, article_id: int, update_article: Article):
+        self.article_repository.update(article_id=article_id, update_article=update_article)
 
     def delete(self, article: Article):
-        return self.article_repository.delete(article=article)
+        self.article_repository.delete(article=article)
 
 
 class CommentHandler:
@@ -128,7 +127,8 @@ class TagHandler:
         return self.tag_repository.get_detail(tag_id=tag_id)
 
     def create(self, tags: List[dict]):
-        return self.tag_repository.create(tags)
+        if len(tags) > 0:
+            self.tag_repository.create(tags)
 
     def delete(self, tag: Tag):
         return self.tag_repository.delete(tag)
