@@ -72,6 +72,7 @@ class Container(containers.DeclarativeContainer):
     attached_file_service = providers.Singleton(
         AttachedFileService,
         attached_file_handler=attached_file_handler,
+        article_handler=article_handler,
         transaction_manager=transaction_manager
     )
     auth_service = providers.Factory(
