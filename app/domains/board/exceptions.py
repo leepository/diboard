@@ -39,3 +39,21 @@ class NotExistTag(APIException):
             detail=exception_detail,
             ex=Exception(exception_detail)
         )
+
+class NotUpdateAuth(APIException):
+    def __init__(self):
+        exception_detail = "Not update authorization"
+        super().__init__(
+            status_code=StatusCode.HTTP_400,
+            detail=exception_detail,
+            ex=Exception(exception_detail)
+        )
+
+class NotDeleteAuth(APIException):
+    def __init__(self):
+        exception_detail = "Not delete authorization"
+        super().__init__(
+            status_code=StatusCode.HTTP_400,
+            detail=exception_detail,
+            ex=Exception(exception_detail)
+        )

@@ -56,7 +56,20 @@ async def get_article_list_api(
         page=pagination_param.page,
         size=pagination_param.size
     )
-    return result_service
+
+    # Make response
+    articles = []
+    for article in result_service:
+        articles.append({
+            'id': article.id,
+            'user_id': article.user_id,
+            'username': article.user.username,
+            'title': article.title,
+            'content': article.content,
+            'created_at': article.created_at,
+            'updated_at': article.updated_at
+        })
+    return articles
 
 @board_router.get(
     name="Article 상세 조회",
@@ -71,12 +84,41 @@ async def get_article_detail_api(
     """
     Article 상세 조회 API
     """
-    article = article_service.get_article_detail(article_id=article_id)
-    if article is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Article not found"
-        )
+    result_service = article_service.get_article_detail(article_id=article_id)
+
+    # Make response
+    tags = []
+    for tag_data in result_service.tags:
+        tags.append({
+            'id': tag_data.id,
+            'user_id': tag_data.user.id,
+            'username': tag_data.user.username,
+            'tagging': tag_data.tagging,
+            'created_at': tag_data.created_at,
+            'updated_at': tag_data.updated_at
+        })
+
+    files = []
+    for file_data in result_service.files:
+        files.append({
+            'id': file_data.id,
+            'user_id': file_data.user_id,
+            'filename': file_data.filename,
+            'file_size': file_data.file_size,
+            'file_type': file_data.file_type
+        })
+
+    article = {
+        'id': result_service.id,
+        'user_id': result_service.user_id,
+        'username': result_service.user.username,
+        'title': result_service.title,
+        'content': result_service.content,
+        'tags': tags,
+        'files': files,
+        'created_at': result_service.created_at,
+        'updated_at': result_service.updated_at
+    }
     return article
 
 @board_router.post(
@@ -86,6 +128,7 @@ async def get_article_detail_api(
 )
 @inject
 async def create_article_api(
+        request: Request,
         data: ArticleUpsert = Depends(),
         files: List[UploadFile] = File(description="첨부파일", default=None),
         article_service: ArticleService = Depends(Provide[Container.article_service])
@@ -94,6 +137,7 @@ async def create_article_api(
     Article 등록 API
     """
     article = Article(
+        user_id=request.state.user.id,
         title=data.title,
         content=data.content
     )
@@ -113,6 +157,7 @@ async def create_article_api(
 )
 @inject
 async def update_article_api(
+        request: Request,
         data: ArticleUpsert = Depends(),
         files: List[UploadFile] = File(description="첨부파일", default=None),
         article_id: int = Path(description="Article 일련 번호"),
@@ -122,6 +167,7 @@ async def update_article_api(
     Article 수정
     """
     article = Article(
+        user_id=request.state.user.id,
         title=data.title,
         content=data.content
     )
@@ -137,13 +183,14 @@ async def update_article_api(
 )
 @inject
 async def delete_article_api(
+        request: Request,
         article_id: int = Path(description="Article 일련 번호"),
         article_service: ArticleService = Depends(Provide[Container.article_service])
 ):
     """
     Article 삭제
     """
-    result_service = article_service.delete_article(article_id=article_id)
+    result_service = article_service.delete_article(article_id=article_id, user_id=request.state.user.id)
     return {'result': result_service}
 
 

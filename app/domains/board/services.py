@@ -4,10 +4,12 @@ from typing import List
 from app.common.constants import S3_BUCKET, S3_KEY_PREFIX
 from app.databases.transactions import TransactionManager
 from app.domains.board.exceptions import (
+    NotDeleteAuth,
     NotExistArticle,
     NotExistAttachedFile,
     NotExistComment,
-    NotExistTag
+    NotExistTag,
+    NotUpdateAuth
 )
 from app.domains.board.models import (
     Article,
@@ -68,7 +70,7 @@ class ArticleService:
 
             # create tags
             if len(tag_data) > 0:
-                tag_list = [{'article_id': article.id, 'tagging': d} for d in tag_data if d != '']
+                tag_list = [{'article_id': article.id, 'user_id': article.user_id, 'tagging': d} for d in tag_data if d != '']
                 self.tag_handler.create(tags=tag_list)
 
             # Upload file
@@ -78,6 +80,7 @@ class ArticleService:
                     if result_flag is True:
                         attached_file = AttachedFile(
                             article_id=article.id,
+                            user_id=article.user_id,
                             s3_bucket_name=S3_BUCKET['BOARD'],
                             s3_key=f"{S3_KEY_PREFIX['BOARD']}/{f.filename}",
                             filename=f.filename,
@@ -93,6 +96,10 @@ class ArticleService:
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
                 raise NotExistArticle()
+
+            if article.user_id != update_article.user_id:
+                raise NotUpdateAuth() # 본인이 작성하지 않은 게시물은 수정 권한이 없음
+
             # Update article
             self.article_handler.update(article_id=article.id, update_article=update_article)
 
@@ -106,7 +113,7 @@ class ArticleService:
                         self.tag_handler.delete_all(article_id=article.id)
 
                 # 신규 Tag 입력
-                tag_list = [{'article_id': article.id, 'tagging': d} for d in tag_data if d != '']
+                tag_list = [{'article_id': article.id, 'user_id': article.user_id, 'tagging': d} for d in tag_data if d != '']
                 self.tag_handler.create(tags=tag_list)
 
             # Upload files 처리
@@ -118,6 +125,7 @@ class ArticleService:
                     if result_flag is True:
                         attached_file = AttachedFile(
                             article_id=article.id,
+                            user_id=article.user_id,
                             s3_bucket_name=S3_BUCKET['BOARD'],
                             s3_key=f"{S3_KEY_PREFIX['BOARD']}/{f.filename}",
                             filename=f.filename,
@@ -127,12 +135,15 @@ class ArticleService:
                         self.attached_file_handler.create(attached_file=attached_file)
             return True
 
-    def delete_article(self, article_id: int):
+    def delete_article(self, article_id: int, user_id: int):
         with self.transaction_manager.transaction():
             # Check target article
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
                 raise NotExistArticle()
+
+            if article.user_id != user_id:
+                raise NotDeleteAuth() # 본인이 작성하지 않은 게시물은 삭제 권한이 없음
 
             # Delete comment for article
             self.comment_handler.delete_all(article_id=article_id)

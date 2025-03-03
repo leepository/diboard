@@ -14,6 +14,7 @@ from app.domains.board.models import (
     Comment,
     Tag
 )
+from app.domains.user.models import User
 from app.domains.board.repositories.repository import (
     ArticleRepository,
     AttachedFileRepository,
@@ -30,7 +31,8 @@ class ArticleRdbRepository(ArticleRepository):
 
     def get_list(self, page: int, size: int):
         offset = (page - 1) * size
-        return self.session.query(Article).order_by(desc(Article.id)).offset(offset).limit(size).all()
+        return self.session.query(Article).filter(Article.is_deleted == False).order_by(desc(Article.id)).offset(offset).limit(size).all()
+
 
     def get_detail(self, article_id: int):
         return self.session.query(Article).filter(Article.id == article_id).first()

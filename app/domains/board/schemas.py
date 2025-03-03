@@ -21,6 +21,8 @@ class ArticleBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int = Field(title="일련 번호")
+    user_id: int = Field(title="작성자 일련 번호")
+    username: str = Field(title="작성자 ID")
     title: str = Field(title="제목")
     content: str = Field(title="내용")
     created_at: datetime = Field(title="작성일시")
@@ -28,15 +30,20 @@ class ArticleBase(BaseModel):
 
 class TagBase(BaseModel):
     id: int = Field(title="일련 번호")
+    user_id: int = Field(title="작성자 일련 번호")
     tagging: str = Field(title="Tag 내용")
+    username: str = Field(title="작성자 ID")
+    created_at: datetime = Field(title="작성일시")
 
 class AttachedFileBase(BaseModel):
     id: int = Field(title="일련 번호")
+    user_id: int = Field(title="작성자 일련 번호")
     filename: str = Field(title="File name")
     file_size: int = Field(title="File size")
     file_type: str = Field(title="File type")
 
 class ArticleData(ArticleBase):
+    model_config = ConfigDict(from_attributes=True)
     tags: List[TagBase] = Field(title="Tags", default=None)
     attached_files: List[AttachedFileBase] = Field(title="Attached_files", default=None)
 
@@ -49,6 +56,8 @@ class CommentData(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int = Field(title="댓글 일련 번호")
+    user_id: int = Field(title="작성자 일련 번호")
+    username: str = Field(title="작성자 ID")
     article_id: int = Field(title="Article 일련번호")
     comment_id: Optional[int|None] = Field(title="부모 댓글 일련 번호")
     content: str = Field(title="댓글 내용")
