@@ -211,11 +211,27 @@ async def get_comment_list_api(
     """
     Comment 목록 조회 API
     """
-    return comment_service.get_comment_list(
+    result_service = comment_service.get_comment_list(
         article_id=article_id,
         page=pagination_params.page,
         size=pagination_params.size
     )
+
+    # Make response
+    comments = []
+    for comment in result_service:
+        comments.append({
+            'id': comment.id,
+            'user_id': comment.user_id,
+            'username': comment.user.username,
+            'article_id': comment.article_id,
+            'comment_id': comment.comment_id,
+            'content': comment.content,
+            'level': comment.level,
+            'created_at': comment.created_at,
+            'updated_at': comment.updated_at
+        })
+    return comments
 
 @board_router.get(
     name="Comment 상세 조회",
@@ -231,7 +247,21 @@ async def get_comment_detail_api(
     """
     Comment 상세 조회 API
     """
-    return comment_service.get_comment_detail(comment_id=comment_id)
+    result_service = comment_service.get_comment_detail(comment_id=comment_id)
+
+    # Make response
+    comment = {
+        'id': result_service.id,
+        'user_id': result_service.user_id,
+        'username': result_service.user.username,
+        'article_id': result_service.article_id,
+        'comment_id': result_service.comment_id,
+        'content': result_service.content,
+        'level': result_service.level,
+        'created_at': result_service.created_at,
+        'updated_at': result_service.updated_at
+    }
+    return comment
 
 @board_router.post(
     name="Comment 등록",
@@ -240,6 +270,7 @@ async def get_comment_detail_api(
 )
 @inject
 async def create_comment_api(
+        request: Request,
         insert_data: CommentCreate,
         article_id: int = Path(description="Article 일련 번호"),
         comment_service: CommentService = Depends(Provide[Container.comment_service])
@@ -248,6 +279,7 @@ async def create_comment_api(
     Comment 등록
     """
     insert_comment = Comment(
+        user_id=request.state.user.id,
         article_id=article_id,
         comment_id=insert_data.comment_id,
         content=insert_data.content,
@@ -263,6 +295,7 @@ async def create_comment_api(
 )
 @inject
 async def update_comment_api(
+        request: Request,
         update_data: CommentCreate,
         article_id: int = Path(description="Article 일련 번호"),
         comment_id: int = Path(description="Comment 일련 번호"),
@@ -272,6 +305,7 @@ async def update_comment_api(
     Comment 수정
     """
     update_comment = Comment(
+        user_id=request.state.user.id,
         article_id=article_id,
         comment_id=update_data.comment_id,
         content=update_data.content,
@@ -291,6 +325,7 @@ async def update_comment_api(
 )
 @inject
 async def delete_comment_api(
+        request: Request,
         article_id: int = Path(description="Article 일련 번호"),
         comment_id: int = Path(description="Comment 일련 번호"),
         comment_service: CommentService = Depends(Provide[Container.comment_service])
@@ -298,7 +333,7 @@ async def delete_comment_api(
     """
     Comment 삭제
     """
-    result_service = comment_service.delete_comment(article_id=article_id, comment_id=comment_id)
+    result_service = comment_service.delete_comment(article_id=article_id, comment_id=comment_id, user_id=request.state.user.id)
     return {'result': result_service}
 
 @board_router.delete(

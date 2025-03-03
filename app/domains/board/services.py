@@ -202,11 +202,14 @@ class CommentService:
             comment = self.comment_handler.get_detail(comment_id=comment_id)
             if comment is None:
                 raise NotExistComment()
+            if comment.user_id != update_comment.user_id:
+                raise NotUpdateAuth()
+
             update_comment.level = comment.level
             self.comment_handler.update(comment_id=comment_id, update_comment=update_comment)
             return True
 
-    def delete_comment(self, article_id: int, comment_id: int):
+    def delete_comment(self, article_id: int, comment_id: int, user_id: int):
         with self.transaction_manager.transaction():
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
@@ -214,6 +217,10 @@ class CommentService:
             comment = self.comment_handler.get_detail(comment_id=comment_id)
             if comment is None:
                 raise NotExistComment()
+
+            if comment.user_id != user_id:
+                raise NotDeleteAuth()
+
             self.comment_handler.delete(comment=comment)
             return True
 
