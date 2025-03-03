@@ -1,1 +1,0 @@
-FastAPI with dependency injector
