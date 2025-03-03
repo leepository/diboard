@@ -146,13 +146,13 @@ class ArticleService:
                 raise NotDeleteAuth() # 본인이 작성하지 않은 게시물은 삭제 권한이 없음
 
             # Delete comment for article
-            self.comment_handler.delete_all(article_id=article_id)
+            self.comment_handler.delete_all(article_id=article.id)
 
             # Delete all tags for article
-            self.tag_handler.delete_all(article_id=article_id)
+            self.tag_handler.delete_all(article_id=article.id)
 
             # Delete all attached_file for article
-            self.attached_file_handler.delete_all(article_id=article_id)
+            self.attached_file_handler.delete_all(article_id=article.id)
 
             # Delete article
             self.article_handler.delete(article=article)
@@ -285,7 +285,7 @@ class AttachedFileService:
 
         return contents, filename
 
-    def delete(self, article_id: int, attached_file_id: int):
+    def delete(self, article_id: int, attached_file_id: int, user_id: int):
         with self.transaction_manager.transaction():
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
@@ -294,6 +294,8 @@ class AttachedFileService:
             attached_file = self.attached_file_handler.get_detail(attached_file_id=attached_file_id)
             if attached_file is None:
                 raise NotExistAttachedFile()
+            if attached_file.user_id != user_id:
+                raise NotDeleteAuth()
 
             self.attached_file_handler.delete(attached_file=attached_file)
             return True

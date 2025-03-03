@@ -115,7 +115,7 @@ async def get_article_detail_api(
         'title': result_service.title,
         'content': result_service.content,
         'tags': tags,
-        'files': files,
+        'attached_files': files,
         'created_at': result_service.created_at,
         'updated_at': result_service.updated_at
     }
@@ -426,6 +426,7 @@ async def get_attached_file_download_api(
 )
 @inject
 async def delete_attached_file_api(
+        request: Request,
         article_id: int = Path(description="Article 일련 번호"),
         attached_file_id: int = Path(description="Attached file 일련 번호"),
         attached_file_service: AttachedFileService = Depends(Provide[Container.attached_file_service])
@@ -433,5 +434,5 @@ async def delete_attached_file_api(
     """
     첨부 파일 삭제
     """
-    result_service = attached_file_service.delete(article_id=article_id, attached_file_id=attached_file_id)
+    result_service = attached_file_service.delete(article_id=article_id, attached_file_id=attached_file_id, user_id=request.state.user.id)
     return {'result': result_service}

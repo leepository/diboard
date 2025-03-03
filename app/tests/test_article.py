@@ -104,6 +104,7 @@ class TestArticle(TestBase):
             lambda x: x['title'] == article_data['title'],
             articles
         ))
+
         if len(existed_articles) > 0:
             for existed_article in existed_articles:
                 self.delete_article(client=client, article_id=existed_article['id'])

@@ -43,7 +43,9 @@ class ArticleRdbRepository(ArticleRepository):
         return article
 
     def update(self, article_id: int, update_article: Article):
-        update_dict = {}
+        update_dict = {
+            'updated_at': datetime.now()
+        }
         if update_article.title is not None and update_article.title != '':
             update_dict.update({'title': update_article.title})
         if update_article.content is not None and update_article.content != '':
@@ -57,7 +59,15 @@ class ArticleRdbRepository(ArticleRepository):
         self.session.execute(query)
 
     def delete(self, article: Article):
-        self.session.delete(article)
+        query = (
+            update(Article)
+            .where(Article.id == article.id)
+            .values(
+                is_deleted=True,
+                deleted_at=datetime.now()
+            )
+        )
+        self.session.execute(query)
 
 
 class CommentRdbRepository(CommentRepository):
