@@ -240,7 +240,7 @@ class TagService:
         self.article_handler = article_handler
         self.transaction_manager = transaction_manager
 
-    def delete(self, tag_id: int, article_id: int):
+    def delete(self, tag_id: int, article_id: int, user_id: int):
         with self.transaction_manager.transaction():
             article = self.article_handler.get_detail(article_id=article_id)
             if article is None:
@@ -248,6 +248,9 @@ class TagService:
             tag = self.tag_handler.get_detail(tag_id=tag_id)
             if tag is None:
                 raise NotExistTag()
+            if tag.user_id != user_id:
+                raise NotDeleteAuth()
+
             self.tag_handler.delete(tag=tag)
             return True
 

@@ -363,6 +363,7 @@ async def delete_comment_all_api(
 )
 @inject
 async def delete_tag_api(
+        request: Request,
         article_id: int = Path(description="Article 일련 번호"),
         tag_id: int = Path(description="Tag 일련 번호"),
         tag_service: TagService = Depends(Provide[Container.tag_service])
@@ -370,7 +371,7 @@ async def delete_tag_api(
     """
     단일 Tag 삭제
     """
-    result_service = tag_service.delete(tag_id=tag_id, article_id=article_id)
+    result_service = tag_service.delete(tag_id=tag_id, article_id=article_id, user_id=request.state.user.id)
     return {'result': result_service}
 
 
